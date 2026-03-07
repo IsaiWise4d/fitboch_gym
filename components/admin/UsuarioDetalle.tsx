@@ -1,0 +1,557 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Calendar,
+  Dumbbell,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+  User,
+} from "lucide-react";
+import { format, parseISO, addMonths, addDays } from "date-fns";
+import { es } from "date-fns/locale";
+import type { Profile, Membresia } from "@/types/app";
+
+type RutinaResumen = {
+  id: string;
+  created_at: string;
+  duracion_plan: string;
+  estado: "activa" | "archivada";
+  modelo_ia: string;
+};
+
+interface Props {
+  profile: Profile;
+  membresias: Membresia[];
+  rutinas: RutinaResumen[];
+}
+
+const PLAN_MESES: Record<string, number> = {
+  mensual: 1,
+  trimestral: 3,
+  semestral: 6,
+  anual: 12,
+};
+
+export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
+  const router = useRouter();
+  const [showRenovar, setShowRenovar] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const membresiaActiva = membresias.find((m) => m.estado === "activa") ?? null;
+  const rutinaActiva = rutinas.find((r) => r.estado === "activa") ?? null;
+  const [confirmarNuevaRutina, setConfirmarNuevaRutina] = useState(false);
+  const [confirmarEliminarMembresia, setConfirmarEliminarMembresia] = useState(false);
+
+  // Renovar membresía
+  const [tipoPlan, setTipoPlan] = useState<string>("mensual");
+  const [monto, setMonto] = useState("");
+  const [fechaFinManual, setFechaFinManual] = useState("");
+  const [usarFechaManual, setUsarFechaManual] = useState(false);
+
+  const fechaFinAuto = format(
+    addDays(addMonths(new Date(), PLAN_MESES[tipoPlan] || 1), -1),
+    "yyyy-MM-dd"
+  );
+
+  async function handleRenovar() {
+    setLoading("renovar");
+    setError(null);
+
+    const hoy = new Date();
+    const fechaInicio = format(hoy, "yyyy-MM-dd");
+    const fechaFin = usarFechaManual && fechaFinManual
+      ? fechaFinManual
+      : fechaFinAuto;
+
+    try {
+      const res = await fetch("/api/admin/renovar-membresia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          usuario_id: profile.id,
+          tipo_plan: tipoPlan,
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin,
+          monto_pagado: monto ? Number(monto) : null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al renovar");
+      } else {
+        setShowRenovar(false);
+        router.refresh();
+      }
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleHabilitarRutina() {
+    setLoading("rutina");
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/habilitar-rutina", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario_id: profile.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al habilitar rutina");
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Link
+          href="/admin/usuarios"
+          className="rounded-md p-1.5 hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-2xl font-bold">
+          {profile.nombre} {profile.apellido || ""}
+        </h1>
+      </div>
+
+      {error && (
+        <div className="rounded-md bg-error/10 p-3 text-sm text-error">
+          {error}
+        </div>
+      )}
+
+      {/* Datos del perfil */}
+      <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <User className="h-4 w-4 text-primary" />
+          Datos del perfil
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p className="text-xs text-muted-foreground">Email</p>
+            <p>{profile.email}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Teléfono</p>
+            <p>{profile.telefono || "No definido"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Género</p>
+            <p className="capitalize">{profile.genero || "No definido"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Fecha nacimiento</p>
+            <p>
+              {profile.fecha_nacimiento
+                ? format(parseISO(profile.fecha_nacimiento), "d MMM yyyy", {
+                    locale: es,
+                  })
+                : "No definida"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Peso / Altura</p>
+            <p>
+              {profile.peso_kg ? `${profile.peso_kg}kg` : "--"} /{" "}
+              {profile.altura_cm ? `${profile.altura_cm}cm` : "--"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Membresía actual */}
+      <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Calendar className="h-4 w-4 text-primary" />
+            Membresía actual
+          </div>
+          {membresiaActiva && (
+            <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full">
+              Activa
+            </span>
+          )}
+        </div>
+
+        {membresiaActiva ? (
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Plan</p>
+              <p className="capitalize">{membresiaActiva.tipo_plan}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Vence</p>
+              <p>
+                {format(parseISO(membresiaActiva.fecha_fin), "d MMM yyyy", {
+                  locale: es,
+                })}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Renovación rutina</p>
+              <p>
+                {membresiaActiva.renovacion_habilitada
+                  ? "Habilitada"
+                  : "No habilitada"}
+              </p>
+            </div>
+            {membresiaActiva.monto_pagado && (
+              <div>
+                <p className="text-xs text-muted-foreground">Monto</p>
+                <p>${membresiaActiva.monto_pagado}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Este usuario no tiene membresía activa
+          </p>
+        )}
+
+        {/* Botón renovar */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => setShowRenovar(!showRenovar)}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          {membresiaActiva ? "Renovar membresía" : "Crear membresía"}
+        </Button>
+
+        {/* Formulario renovar */}
+        {showRenovar && (
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="space-y-2">
+              <Label>Tipo de plan</Label>
+              <select
+                value={tipoPlan}
+                onChange={(e) => setTipoPlan(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="mensual">Mensual</option>
+                <option value="trimestral">Trimestral</option>
+                <option value="semestral">Semestral</option>
+                <option value="anual">Anual</option>
+              </select>
+            </div>
+
+            {/* Fecha fin */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Fecha fin</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsarFechaManual(!usarFechaManual);
+                    if (!usarFechaManual) setFechaFinManual("");
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {usarFechaManual ? "Usar automática" : "Personalizar fecha"}
+                </button>
+              </div>
+              {usarFechaManual ? (
+                <Input
+                  type="date"
+                  value={fechaFinManual}
+                  onChange={(e) => setFechaFinManual(e.target.value)}
+                  min={format(new Date(), "yyyy-MM-dd")}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground px-3 py-1.5 rounded-md border border-border bg-white/5">
+                  {format(parseISO(fechaFinAuto), "d MMM yyyy", { locale: es })}
+                  <span className="text-xs ml-2 opacity-60">(auto)</span>
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Monto pagado (opcional)</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+              />
+            </div>
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={handleRenovar}
+              disabled={loading === "renovar" || (usarFechaManual && !fechaFinManual)}
+            >
+              {loading === "renovar" ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Confirmar renovación
+            </Button>
+          </div>
+        )}
+
+        {/* Botón eliminar membresía */}
+        {membresiaActiva && !confirmarEliminarMembresia && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-error border-error/30 hover:bg-error/10"
+            onClick={() => setConfirmarEliminarMembresia(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Eliminar membresía
+          </Button>
+        )}
+
+        {/* Confirmación eliminar membresía */}
+        {confirmarEliminarMembresia && (
+          <div className="rounded-lg border border-error/50 bg-error/10 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-error">
+              <AlertTriangle className="h-4 w-4" />
+              ¿Eliminar membresía?
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Se eliminará la membresía activa de este usuario. Ya no podrá ver su rutina hasta que se le asigne una nueva.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setConfirmarEliminarMembresia(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 bg-error text-white hover:bg-error/80"
+                onClick={async () => {
+                  setLoading("eliminar-mem");
+                  setError(null);
+                  try {
+                    const res = await fetch("/api/admin/eliminar-membresia", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ membresia_id: membresiaActiva!.id }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setError(data.error || "Error al eliminar");
+                    } else {
+                      setConfirmarEliminarMembresia(false);
+                      router.refresh();
+                    }
+                  } catch {
+                    setError("Error de conexión");
+                  } finally {
+                    setLoading(null);
+                  }
+                }}
+                disabled={loading === "eliminar-mem"}
+              >
+                {loading === "eliminar-mem" ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Sí, eliminar
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Rutina */}
+      <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Dumbbell className="h-4 w-4 text-primary" />
+            Rutina
+          </div>
+          {rutinaActiva && (
+            <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full">
+              Activa
+            </span>
+          )}
+        </div>
+
+        {rutinaActiva ? (
+          <div className="text-sm">
+            <p>
+              Plan {rutinaActiva.duracion_plan.replace("_", " ")} · Generada{" "}
+              {format(parseISO(rutinaActiva.created_at), "d MMM yyyy", {
+                locale: es,
+              })}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Modelo: {rutinaActiva.modelo_ia}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {membresiaActiva?.renovacion_habilitada
+              ? "Esperando que el usuario genere su rutina"
+              : "Sin rutina generada"}
+          </p>
+        )}
+
+        {/* Botón gestionar nueva rutina (cuando ya tiene una activa) */}
+        {membresiaActiva && rutinaActiva && !confirmarNuevaRutina && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => setConfirmarNuevaRutina(true)}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Gestionar nueva rutina
+          </Button>
+        )}
+
+        {/* Confirmación */}
+        {confirmarNuevaRutina && (
+          <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-warning">
+              <AlertTriangle className="h-4 w-4" />
+              ¿Estás seguro?
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Esta acción archivará la rutina actual del usuario y le permitirá generar una nueva. La rutina actual ya no será visible para el usuario.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setConfirmarNuevaRutina(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 bg-warning text-black hover:bg-warning/80"
+                onClick={() => {
+                  setConfirmarNuevaRutina(false);
+                  handleHabilitarRutina();
+                }}
+                disabled={loading === "rutina"}
+              >
+                {loading === "rutina" ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                )}
+                Sí, archivar y habilitar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Botón habilitar rutina (cuando no tiene rutina ni renovación habilitada) */}
+        {membresiaActiva && !rutinaActiva && !membresiaActiva.renovacion_habilitada && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleHabilitarRutina}
+            disabled={loading === "rutina"}
+          >
+            {loading === "rutina" ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            Habilitar nueva rutina
+          </Button>
+        )}
+
+        {membresiaActiva?.renovacion_habilitada && (
+          <div className="rounded-md bg-warning/10 p-2 text-xs text-warning">
+            Renovación habilitada — el usuario puede generar su rutina
+          </div>
+        )}
+      </div>
+
+      {/* Historial de membresías */}
+      {membresias.length > 0 && (
+        <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+          <p className="text-sm font-medium">Historial de membresías</p>
+          <div className="divide-y divide-border">
+            {membresias.map((m) => (
+              <div key={m.id} className="py-2 flex items-center justify-between text-sm">
+                <div>
+                  <p className="capitalize">
+                    {m.tipo_plan}
+                    {m.monto_pagado ? ` · $${m.monto_pagado}` : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(parseISO(m.fecha_inicio), "d MMM yyyy", { locale: es })} →{" "}
+                    {format(parseISO(m.fecha_fin), "d MMM yyyy", { locale: es })}
+                  </p>
+                </div>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${
+                    m.estado === "activa"
+                      ? "bg-success/20 text-success"
+                      : m.estado === "vencida"
+                        ? "bg-error/20 text-error"
+                        : "bg-white/10 text-muted-foreground"
+                  }`}
+                >
+                  {m.estado}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Historial de rutinas */}
+      {rutinas.length > 1 && (
+        <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+          <p className="text-sm font-medium">Historial de rutinas</p>
+          <div className="divide-y divide-border">
+            {rutinas
+              .filter((r) => r.estado === "archivada")
+              .map((r) => (
+                <div key={r.id} className="py-2 text-sm">
+                  <p>
+                    Plan {r.duracion_plan.replace("_", " ")} ·{" "}
+                    {format(parseISO(r.created_at), "d MMM yyyy", { locale: es })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Archivada</p>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
