@@ -7,7 +7,9 @@ const grupoEmoji: Record<string, string> = {
   espalda: "🔙",
   piernas: "🦵",
   hombros: "💪",
-  brazos: "💪",
+  bíceps: "💪",
+  tríceps: "💪",
+  glúteos: "🍑",
   core: "🎯",
   cardio: "🏃",
 };

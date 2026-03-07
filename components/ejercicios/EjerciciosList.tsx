@@ -12,7 +12,9 @@ const GRUPOS_MUSCULARES = [
   "Espalda",
   "Piernas",
   "Hombros",
-  "Brazos",
+  "Bíceps",
+  "Tríceps",
+  "Glúteos",
   "Core",
   "Cardio",
 ];

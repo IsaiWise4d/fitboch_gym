@@ -26,7 +26,7 @@ export default async function AdminDashboardPage() {
     { count: vencidas },
     { data: ultimosRegistros },
   ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("rol", "usuario"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("rol", "usuario").eq("activo", true),
     supabase.from("membresias").select("*", { count: "exact", head: true }).eq("estado", "activa"),
     supabase
       .from("membresias")
@@ -39,6 +39,7 @@ export default async function AdminDashboardPage() {
       .from("profiles")
       .select("id, nombre, apellido, email, created_at")
       .eq("rol", "usuario")
+      .eq("activo", true)
       .order("created_at", { ascending: false })
       .limit(5),
   ]);

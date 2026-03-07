@@ -16,6 +16,8 @@ import {
   Sparkles,
   Trash2,
   User,
+  UserX,
+  UserCheck,
 } from "lucide-react";
 import { format, parseISO, addMonths, addDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -52,6 +54,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
   const rutinaActiva = rutinas.find((r) => r.estado === "activa") ?? null;
   const [confirmarNuevaRutina, setConfirmarNuevaRutina] = useState(false);
   const [confirmarEliminarMembresia, setConfirmarEliminarMembresia] = useState(false);
+  const [confirmarEliminarUsuario, setConfirmarEliminarUsuario] = useState(false);
 
   // Renovar membresía
   const [tipoPlan, setTipoPlan] = useState<string>("mensual");
@@ -552,6 +555,105 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
           </div>
         </div>
       )}
+
+      {/* Eliminar / Restaurar usuario */}
+      <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+        {!profile.activo && (
+          <div className="rounded-md bg-error/10 p-2 text-xs text-error text-center mb-2">
+            Este usuario está desactivado
+          </div>
+        )}
+
+        {!confirmarEliminarUsuario ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className={`w-full ${
+              profile.activo
+                ? "text-error border-error/30 hover:bg-error/10"
+                : "text-success border-success/30 hover:bg-success/10"
+            }`}
+            onClick={() => setConfirmarEliminarUsuario(true)}
+          >
+            {profile.activo ? (
+              <><UserX className="h-4 w-4 mr-2" /> Desactivar usuario</>
+            ) : (
+              <><UserCheck className="h-4 w-4 mr-2" /> Restaurar usuario</>
+            )}
+          </Button>
+        ) : (
+          <div className={`rounded-lg border p-4 space-y-3 ${
+            profile.activo
+              ? "border-error/50 bg-error/10"
+              : "border-success/50 bg-success/10"
+          }`}>
+            <div className={`flex items-center gap-2 text-sm font-medium ${
+              profile.activo ? "text-error" : "text-success"
+            }`}>
+              <AlertTriangle className="h-4 w-4" />
+              {profile.activo ? "¿Desactivar usuario?" : "¿Restaurar usuario?"}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {profile.activo
+                ? "El usuario dejará de aparecer en la lista de usuarios. No se elimina ningún dato, solo se oculta."
+                : "El usuario volverá a aparecer en la lista y podrá acceder normalmente."}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setConfirmarEliminarUsuario(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className={`flex-1 ${
+                  profile.activo
+                    ? "bg-error text-white hover:bg-error/80"
+                    : "bg-success text-white hover:bg-success/80"
+                }`}
+                onClick={async () => {
+                  setLoading("toggle-user");
+                  setError(null);
+                  try {
+                    const res = await fetch("/api/admin/toggle-usuario", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        usuario_id: profile.id,
+                        activo: !profile.activo,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setError(data.error || "Error al actualizar");
+                    } else {
+                      setConfirmarEliminarUsuario(false);
+                      router.refresh();
+                    }
+                  } catch {
+                    setError("Error de conexión");
+                  } finally {
+                    setLoading(null);
+                  }
+                }}
+                disabled={loading === "toggle-user"}
+              >
+                {loading === "toggle-user" ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : profile.activo ? (
+                  <UserX className="h-4 w-4 mr-2" />
+                ) : (
+                  <UserCheck className="h-4 w-4 mr-2" />
+                )}
+                {profile.activo ? "Sí, desactivar" : "Sí, restaurar"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

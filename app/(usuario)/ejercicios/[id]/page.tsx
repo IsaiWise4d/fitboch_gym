@@ -43,12 +43,14 @@ export default async function EjercicioDetallePage({
 
       {/* Imagen */}
       {ejercicio.imagen_url && (
-        <div className="rounded-xl overflow-hidden border border-border">
-          <img
-            src={ejercicio.imagen_url}
-            alt={ejercicio.nombre}
-            className="w-full h-48 object-cover"
-          />
+        <div className="flex justify-center">
+          <div className="rounded-xl overflow-hidden border border-border w-full max-w-md">
+            <img
+              src={ejercicio.imagen_url}
+              alt={ejercicio.nombre}
+              className="w-full aspect-square object-cover"
+            />
+          </div>
         </div>
       )}
 
