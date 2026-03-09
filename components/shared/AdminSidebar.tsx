@@ -27,7 +27,7 @@ export function AdminSidebar() {
   const navContent = (
     <div className="flex h-full flex-col">
       <div className="hidden lg:block p-6">
-        <h2 className="text-lg font-bold text-primary">FitBoch Admin</h2>
+        <Link href="/admin" className="text-lg font-bold text-primary hover:opacity-80 transition-opacity">FitBoch Admin</Link>
       </div>
 
       <nav className="flex-1 space-y-1 px-3">
@@ -70,7 +70,7 @@ export function AdminSidebar() {
     <>
       {/* Navbar móvil */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b border-border bg-surface px-4 h-14 lg:hidden">
-        <span className="text-lg font-bold text-primary">FitBoch</span>
+        <Link href="/admin" className="text-lg font-bold text-primary hover:opacity-80 transition-opacity">FitBoch</Link>
         <button
           onClick={() => setOpen(!open)}
           className="rounded-md p-2 hover:bg-white/10 transition-colors"

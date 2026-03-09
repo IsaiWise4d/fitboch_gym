@@ -27,7 +27,7 @@ export default async function UsuarioLayout({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-sm font-bold text-primary">FitBoch</span>
+        <a href="/dashboard" className="text-sm font-bold text-primary hover:opacity-80 transition-opacity">FitBoch</a>
         <LogoutButton />
       </header>
       <main className="flex-1 pb-20">

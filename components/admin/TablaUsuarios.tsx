@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronRight } from "lucide-react";
 import type { Profile, Membresia } from "@/types/app";
-import { isBefore, addDays, parseISO } from "date-fns";
+import { isBefore, addDays, parseISO, startOfDay } from "date-fns";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -28,8 +28,8 @@ function getEstado(membresia: Membresia | null): {
   color: string;
 } {
   if (!membresia) return { label: "Sin membresía", color: "text-muted-foreground" };
-  const hoy = new Date();
-  const fin = parseISO(membresia.fecha_fin);
+  const hoy = startOfDay(new Date());
+  const fin = startOfDay(parseISO(membresia.fecha_fin));
   if (isBefore(fin, hoy)) return { label: "Vencida", color: "text-error" };
   if (isBefore(fin, addDays(hoy, 7))) return { label: "Por vencer", color: "text-warning" };
   return { label: "Activa", color: "text-success" };
