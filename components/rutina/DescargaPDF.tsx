@@ -10,12 +10,12 @@ interface DescargaPDFProps {
 }
 
 // Colores de la app
-const PRIMARY = [255, 69, 0]; // #FF4500
-const BG_DARK = [10, 10, 10]; // #0A0A0A
-const SURFACE = [26, 26, 26]; // #1A1A1A
-const TEXT_WHITE = [255, 255, 255];
-const TEXT_MUTED = [160, 160, 160];
-const BORDER = [50, 50, 50];
+const PRIMARY = [255, 69, 0] as const;
+const BG_DARK = [10, 10, 10] as const;
+const SURFACE = [26, 26, 26] as const;
+const TEXT_WHITE = [255, 255, 255] as const;
+const TEXT_MUTED = [160, 160, 160] as const;
+const BORDER = [50, 50, 50] as const;
 
 export function DescargaPDF({ rutina }: DescargaPDFProps) {
   const [loading, setLoading] = useState(false);
