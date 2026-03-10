@@ -55,7 +55,9 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
   const [confirmarNuevaRutina, setConfirmarNuevaRutina] = useState(false);
   const [confirmarEliminarMembresia, setConfirmarEliminarMembresia] = useState(false);
   const [confirmarEliminarUsuario, setConfirmarEliminarUsuario] = useState(false);
-  const [incluirNutricional, setIncluirNutricional] = useState(false);
+  const [incluirNutricional, setIncluirNutricional] = useState(
+    membresiaActiva?.plan_nutricional_habilitado ?? false
+  );
 
   // Renovar membresía
   const [tipoPlan, setTipoPlan] = useState<string>("mensual");
@@ -96,6 +98,33 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
         setError(data.error || "Error al renovar");
       } else {
         setShowRenovar(false);
+        router.refresh();
+      }
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleToggleNutricional(habilitado: boolean) {
+    if (!membresiaActiva) return;
+    setLoading("nutricional");
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/toggle-nutricional", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          membresia_id: membresiaActiva.id,
+          habilitado,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al actualizar plan nutricional");
+      } else {
+        setIncluirNutricional(habilitado);
         router.refresh();
       }
     } catch {
@@ -429,6 +458,24 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
           </p>
         )}
 
+        {/* Toggle plan nutricional (cuando tiene rutina activa) */}
+        {membresiaActiva && rutinaActiva && (
+          <label className="flex items-center gap-3 rounded-lg border border-border bg-white/5 p-2 cursor-pointer hover:bg-white/10 transition-colors">
+            <input
+              type="checkbox"
+              checked={incluirNutricional}
+              onChange={(e) => handleToggleNutricional(e.target.checked)}
+              disabled={loading === "nutricional"}
+              className="h-4 w-4 rounded border-border accent-primary"
+            />
+            <div>
+              <p className="text-sm font-medium">Plan nutricional</p>
+              <p className="text-xs text-muted-foreground">Servicio adicional con costo aparte</p>
+            </div>
+            {loading === "nutricional" && <Loader2 className="h-3 w-3 animate-spin ml-auto" />}
+          </label>
+        )}
+
         {/* Botón gestionar nueva rutina (cuando ya tiene una activa) */}
         {membresiaActiva && rutinaActiva && !confirmarNuevaRutina && (
           <Button
@@ -514,11 +561,22 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
         )}
 
         {membresiaActiva?.renovacion_habilitada && (
-          <div className="rounded-md bg-warning/10 p-2 text-xs text-warning space-y-1">
+          <div className="rounded-md bg-warning/10 p-2 text-xs text-warning space-y-2">
             <p>Renovación habilitada — el usuario puede generar su rutina</p>
-            {membresiaActiva.plan_nutricional_habilitado && (
-              <p className="text-primary">✓ Plan nutricional incluido</p>
-            )}
+            <label className="flex items-center gap-3 rounded-lg border border-border bg-white/5 p-2 cursor-pointer hover:bg-white/10 transition-colors">
+              <input
+                type="checkbox"
+                checked={incluirNutricional}
+                onChange={(e) => handleToggleNutricional(e.target.checked)}
+                disabled={loading === "nutricional"}
+                className="h-4 w-4 rounded border-border accent-primary"
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">Plan nutricional</p>
+                <p className="text-xs text-muted-foreground">Servicio adicional con costo aparte</p>
+              </div>
+              {loading === "nutricional" && <Loader2 className="h-3 w-3 animate-spin ml-auto" />}
+            </label>
           </div>
         )}
       </div>
