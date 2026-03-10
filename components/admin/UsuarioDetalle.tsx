@@ -55,6 +55,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
   const [confirmarNuevaRutina, setConfirmarNuevaRutina] = useState(false);
   const [confirmarEliminarMembresia, setConfirmarEliminarMembresia] = useState(false);
   const [confirmarEliminarUsuario, setConfirmarEliminarUsuario] = useState(false);
+  const [incluirNutricional, setIncluirNutricional] = useState(false);
 
   // Renovar membresía
   const [tipoPlan, setTipoPlan] = useState<string>("mensual");
@@ -112,7 +113,10 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
       const res = await fetch("/api/admin/habilitar-rutina", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario_id: profile.id }),
+        body: JSON.stringify({
+          usuario_id: profile.id,
+          plan_nutricional: incluirNutricional,
+        }),
       });
 
       const data = await res.json();
@@ -479,25 +483,42 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
 
         {/* Botón habilitar rutina (cuando no tiene rutina ni renovación habilitada) */}
         {membresiaActiva && !rutinaActiva && !membresiaActiva.renovacion_habilitada && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={handleHabilitarRutina}
-            disabled={loading === "rutina"}
-          >
-            {loading === "rutina" ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
-            )}
-            Habilitar nueva rutina
-          </Button>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 rounded-lg border border-border bg-white/5 p-3 cursor-pointer hover:bg-white/10 transition-colors">
+              <input
+                type="checkbox"
+                checked={incluirNutricional}
+                onChange={(e) => setIncluirNutricional(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-primary"
+              />
+              <div>
+                <p className="text-sm font-medium">Incluir plan nutricional</p>
+                <p className="text-xs text-muted-foreground">Servicio adicional con costo aparte</p>
+              </div>
+            </label>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={handleHabilitarRutina}
+              disabled={loading === "rutina"}
+            >
+              {loading === "rutina" ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              Habilitar nueva rutina
+            </Button>
+          </div>
         )}
 
         {membresiaActiva?.renovacion_habilitada && (
-          <div className="rounded-md bg-warning/10 p-2 text-xs text-warning">
-            Renovación habilitada — el usuario puede generar su rutina
+          <div className="rounded-md bg-warning/10 p-2 text-xs text-warning space-y-1">
+            <p>Renovación habilitada — el usuario puede generar su rutina</p>
+            {membresiaActiva.plan_nutricional_habilitado && (
+              <p className="text-primary">✓ Plan nutricional incluido</p>
+            )}
           </div>
         )}
       </div>

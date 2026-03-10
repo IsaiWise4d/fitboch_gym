@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       .select("*")
       .eq("usuario_id", user.id)
       .eq("estado", "activa")
+      .gte("fecha_fin", new Date().toISOString().split("T")[0])
       .eq("renovacion_habilitada", true)
       .maybeSingle();
 
@@ -53,8 +54,9 @@ export async function POST(request: Request) {
     // 4. Obtener datos del formulario
     const datosUsuario: DatosRutina = await request.json();
 
-    // 5. Construir prompt
-    const prompt = construirPromptRutina(datosUsuario);
+    // 5. Construir prompt (incluir nutricional si está habilitado)
+    const incluirNutricional = membresia.plan_nutricional_habilitado === true;
+    const prompt = construirPromptRutina(datosUsuario, incluirNutricional);
 
     // 6. Llamar a Gemini
     const apiKey = process.env.GEMINI_API_KEY;
@@ -89,7 +91,7 @@ export async function POST(request: Request) {
       membresia_id: membresia.id,
       datos_input: datosUsuario as unknown as Json,
       texto_rutina: textoRutina,
-      duracion_plan: datosUsuario.duracion_plan,
+      duracion_plan: "3_meses",
       modelo_ia: modelo,
       tokens_usados: response.usageMetadata?.totalTokenCount ?? null,
     });

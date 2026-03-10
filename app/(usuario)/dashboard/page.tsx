@@ -22,6 +22,7 @@ export default async function DashboardPage() {
       .select("*")
       .eq("usuario_id", user.id)
       .eq("estado", "activa")
+      .gte("fecha_fin", new Date().toISOString().split("T")[0])
       .order("fecha_fin", { ascending: false })
       .limit(1)
       .maybeSingle(),

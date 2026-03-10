@@ -20,7 +20,7 @@ export interface Database {
           fecha_nacimiento: string | null;
           peso_kg: number | null;
           altura_cm: number | null;
-          genero: "masculino" | "femenino" | "otro" | null;
+          genero: "masculino" | "femenino" | null;
           telefono: string | null;
           rol: "usuario" | "admin";
           activo: boolean;
@@ -36,7 +36,7 @@ export interface Database {
           fecha_nacimiento?: string | null;
           peso_kg?: number | null;
           altura_cm?: number | null;
-          genero?: "masculino" | "femenino" | "otro" | null;
+          genero?: "masculino" | "femenino" | null;
           telefono?: string | null;
           rol?: "usuario" | "admin";
           activo?: boolean;
@@ -52,7 +52,7 @@ export interface Database {
           fecha_nacimiento?: string | null;
           peso_kg?: number | null;
           altura_cm?: number | null;
-          genero?: "masculino" | "femenino" | "otro" | null;
+          genero?: "masculino" | "femenino" | null;
           telefono?: string | null;
           rol?: "usuario" | "admin";
           activo?: boolean;
@@ -70,6 +70,7 @@ export interface Database {
           fecha_fin: string;
           estado: "activa" | "vencida" | "suspendida" | "pendiente";
           renovacion_habilitada: boolean;
+          plan_nutricional_habilitado: boolean;
           notas: string | null;
           monto_pagado: number | null;
         };
@@ -82,6 +83,7 @@ export interface Database {
           created_at?: string;
           estado?: "activa" | "vencida" | "suspendida" | "pendiente";
           renovacion_habilitada?: boolean;
+          plan_nutricional_habilitado?: boolean;
           notas?: string | null;
           monto_pagado?: number | null;
         };
@@ -94,6 +96,7 @@ export interface Database {
           fecha_fin?: string;
           estado?: "activa" | "vencida" | "suspendida" | "pendiente";
           renovacion_habilitada?: boolean;
+          plan_nutricional_habilitado?: boolean;
           notas?: string | null;
           monto_pagado?: number | null;
         };

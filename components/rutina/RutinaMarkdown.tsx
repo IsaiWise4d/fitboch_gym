@@ -1,6 +1,7 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface RutinaMarkdownProps {
   texto: string;
@@ -10,22 +11,35 @@ export function RutinaMarkdown({ texto }: RutinaMarkdownProps) {
   return (
     <div className="rutina-markdown text-sm leading-relaxed">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ children }) => (
-            <h1 className="text-xl font-bold text-white mt-6 mb-3 first:mt-0 border-b border-border pb-2">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-lg font-bold text-primary mt-6 mb-2 first:mt-0">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-base font-semibold text-white mt-4 mb-2">
-              {children}
-            </h3>
-          ),
+          h1: ({ children }) => {
+            const text = String(children);
+            const match = text.match(/^(\d+)\.\s*(.*)/);
+            return (
+              <h1 className={`text-xl font-bold mt-6 mb-3 first:mt-0 border-b border-border pb-2 ${match ? "text-primary" : "text-white"}`}>
+                {children}
+              </h1>
+            );
+          },
+          h2: ({ children }) => {
+            const text = String(children);
+            const match = text.match(/^(\d+)\.\s*(.*)/);
+            return (
+              <h2 className={`text-lg font-bold mt-6 mb-2 first:mt-0 ${match ? "text-primary" : "text-primary"}`}>
+                {children}
+              </h2>
+            );
+          },
+          h3: ({ children }) => {
+            const text = String(children);
+            const match = text.match(/^(\d+)\.\s*(.*)/);
+            return (
+              <h3 className={`text-base font-semibold mt-4 mb-2 ${match ? "text-primary" : "text-white"}`}>
+                {children}
+              </h3>
+            );
+          },
           h4: ({ children }) => (
             <h4 className="text-sm font-semibold text-white/90 mt-3 mb-1">
               {children}
@@ -57,20 +71,20 @@ export function RutinaMarkdown({ texto }: RutinaMarkdownProps) {
           ),
           hr: () => <hr className="border-border my-4" />,
           table: ({ children }) => (
-            <div className="overflow-x-auto mb-4 rounded-lg border border-border">
-              <table className="w-full text-sm">{children}</table>
+            <div className="overflow-x-auto mb-4 rounded-lg border border-border -mx-1">
+              <table className="min-w-max w-full text-sm">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
             <thead className="bg-white/5 text-white">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="px-3 py-2 text-left font-semibold text-xs uppercase tracking-wider border-b border-border">
+            <th className="px-3 py-2 text-left font-semibold text-xs uppercase tracking-wider border-b border-border whitespace-nowrap">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-3 py-2 text-muted-foreground border-b border-border/50">
+            <td className="px-3 py-2 text-muted-foreground border-b border-border/50 whitespace-nowrap">
               {children}
             </td>
           ),

@@ -74,7 +74,7 @@ export function PerfilForm({ profile }: { profile: Profile }) {
         fecha_nacimiento: data.fecha_nacimiento || null,
         peso_kg: data.peso_kg ? Number(data.peso_kg) : null,
         altura_cm: data.altura_cm ? Number(data.altura_cm) : null,
-        genero: (data.genero as "masculino" | "femenino" | "otro") || null,
+        genero: (data.genero as "masculino" | "femenino") || null,
         perfil_completo: !!tieneDataEsencial,
       })
       .eq("id", profile.id);
@@ -152,9 +152,8 @@ export function PerfilForm({ profile }: { profile: Profile }) {
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="">Seleccionar</option>
-              <option value="masculino">Masculino</option>
-              <option value="femenino">Femenino</option>
-              <option value="otro">Otro</option>
+              <option value="masculino">Hombre</option>
+              <option value="femenino">Mujer</option>
             </select>
           </div>
         </div>

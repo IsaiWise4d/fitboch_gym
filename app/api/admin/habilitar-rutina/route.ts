@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const { usuario_id } = await request.json();
+    const { usuario_id, plan_nutricional } = await request.json();
 
     if (!usuario_id) {
       return NextResponse.json({ error: "usuario_id requerido" }, { status: 400 });
@@ -54,7 +54,10 @@ export async function POST(request: Request) {
     // Habilitar renovación en la membresía activa
     const { error: updateError } = await supabase
       .from("membresias")
-      .update({ renovacion_habilitada: true })
+      .update({
+        renovacion_habilitada: true,
+        plan_nutricional_habilitado: plan_nutricional === true,
+      })
       .eq("id", membresia.id);
 
     if (updateError) {

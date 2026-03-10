@@ -27,14 +27,14 @@ export default async function AdminDashboardPage() {
     { data: ultimosRegistros },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("rol", "usuario").eq("activo", true),
-    supabase.from("membresias").select("*", { count: "exact", head: true }).eq("estado", "activa"),
+    supabase.from("membresias").select("*", { count: "exact", head: true }).eq("estado", "activa").gte("fecha_fin", hoy),
     supabase
       .from("membresias")
       .select("*, profiles!inner(nombre, apellido, email)")
       .eq("estado", "activa")
       .lte("fecha_fin", en7dias)
       .gte("fecha_fin", hoy),
-    supabase.from("membresias").select("*", { count: "exact", head: true }).eq("estado", "vencida"),
+    supabase.from("membresias").select("*", { count: "exact", head: true }).eq("estado", "activa").lt("fecha_fin", hoy),
     supabase
       .from("profiles")
       .select("id, nombre, apellido, email, created_at")
