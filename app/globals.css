@@ -64,8 +64,8 @@
   --card-foreground: #FFFFFF;
   --popover: #1A1A1A;
   --popover-foreground: #FFFFFF;
-  --primary: #FF4500;
-  --primary-foreground: #FFFFFF;
+  --primary: #f9c633;
+  --primary-foreground: #000000;
   --secondary: #2A2A2A;
   --secondary-foreground: #FFFFFF;
   --muted: #1A1A1A;
@@ -75,7 +75,7 @@
   --destructive: #EF4444;
   --border: #2A2A2A;
   --input: #2A2A2A;
-  --ring: #FF4500;
+  --ring: #f9c633;
   --radius: 0.625rem;
 
   /* Custom gym colors */
@@ -86,8 +86,8 @@
   --error: #EF4444;
 
   /* Charts */
-  --chart-1: #FF4500;
-  --chart-2: #FF6B35;
+  --chart-1: #f9c633;
+  --chart-2: #d4a828;
   --chart-3: #22C55E;
   --chart-4: #F59E0B;
   --chart-5: #3B82F6;
@@ -95,12 +95,12 @@
   /* Sidebar */
   --sidebar: #111111;
   --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #FF4500;
-  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-primary: #f9c633;
+  --sidebar-primary-foreground: #000000;
   --sidebar-accent: #1A1A1A;
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: #2A2A2A;
-  --sidebar-ring: #FF4500;
+  --sidebar-ring: #f9c633;
 }
 
 /* Also apply for .dark class so shadcn components using dark: variant work */
@@ -111,8 +111,8 @@
   --card-foreground: #FFFFFF;
   --popover: #1A1A1A;
   --popover-foreground: #FFFFFF;
-  --primary: #FF4500;
-  --primary-foreground: #FFFFFF;
+  --primary: #f9c633;
+  --primary-foreground: #000000;
   --secondary: #2A2A2A;
   --secondary-foreground: #FFFFFF;
   --muted: #1A1A1A;
@@ -122,7 +122,7 @@
   --destructive: #EF4444;
   --border: #2A2A2A;
   --input: #2A2A2A;
-  --ring: #FF4500;
+  --ring: #f9c633;
 
   --surface: #1A1A1A;
   --surface-hover: #222222;
@@ -130,20 +130,20 @@
   --warning: #F59E0B;
   --error: #EF4444;
 
-  --chart-1: #FF4500;
-  --chart-2: #FF6B35;
+  --chart-1: #f9c633;
+  --chart-2: #d4a828;
   --chart-3: #22C55E;
   --chart-4: #F59E0B;
   --chart-5: #3B82F6;
 
   --sidebar: #111111;
   --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #FF4500;
-  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-primary: #f9c633;
+  --sidebar-primary-foreground: #000000;
   --sidebar-accent: #1A1A1A;
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: #2A2A2A;
-  --sidebar-ring: #FF4500;
+  --sidebar-ring: #f9c633;
 }
 
 @layer base {
@@ -175,8 +175,8 @@
   }
 
   select option:checked {
-    background-color: #FF4500;
-    color: #FFFFFF;
+    background-color: #f9c633;
+    color: #000000;
   }
 
   select option:hover {

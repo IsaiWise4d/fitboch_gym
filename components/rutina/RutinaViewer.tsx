@@ -35,7 +35,7 @@ export function RutinaViewer({ rutina }: RutinaViewerProps) {
       </div>
 
       {/* Botón PDF — deshabilitado temporalmente */}
-      {/* <DescargaPDF rutina={rutina} /> */}
+      <DescargaPDF rutina={rutina} />
 
       {/* Contenido de la rutina */}
       <div className="rounded-xl border border-border bg-surface p-4 md:p-6">

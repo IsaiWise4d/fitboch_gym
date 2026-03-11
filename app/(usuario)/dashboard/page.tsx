@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { MembresiaCard } from "@/components/dashboard/MembresiaCard";
-import { AccesosRapidos } from "@/components/dashboard/AccesosRapidos";
+import { RutinaDiaria } from "@/components/dashboard/RutinaDiaria";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 
@@ -28,7 +28,7 @@ export default async function DashboardPage() {
       .maybeSingle(),
     supabase
       .from("rutinas")
-      .select("id, estado")
+      .select("id, estado, texto_rutina")
       .eq("usuario_id", user.id)
       .eq("estado", "activa")
       .maybeSingle(),
@@ -75,8 +75,10 @@ export default async function DashboardPage() {
       {/* Card de membresía */}
       <MembresiaCard membresia={membresia} />
 
-      {/* Accesos rápidos */}
-      <AccesosRapidos />
+      {/* Rutina del día */}
+      {rutina?.texto_rutina && membresia && (
+        <RutinaDiaria textoRutina={rutina.texto_rutina} />
+      )}
     </div>
   );
 }
