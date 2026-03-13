@@ -24,8 +24,9 @@ export interface DiaSemana {
 }
 
 // Captura: grupo 1 = primer número, grupo 2 = segundo número (si "6 & 7"), grupo 3 = descripción
+// Ignora el nombre del día en la semana si la IA lo incluye (ej: " (Lunes)") antes del separador (: o -).
 const REGEX_DIA =
-  /(?:^#{2,4}\s*\**\s*|\*\*\s*)d[ií]a\s+(\d+)(?:\s*[&yY,]\s*(\d+))?\s*[:\-—–]\s*(.+?)(?:\*\*\s*)?$/i;
+  /(?:^#{2,4}\s*\**\s*|\*\*\s*)d[ií]a\s+(\d+)(?:\s*[&yY,]\s*(\d+))?[^:\-—–]*[:\-—–]\s*(.+?)(?:\*\*\s*)?$/i;
 
 const DESCANSO_KEYWORDS = /descanso|liss|cardio|recuperaci[oó]n|off|rest/i;
 

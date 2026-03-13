@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { RutinaViewer } from "@/components/rutina/RutinaViewer";
 import { FormularioRutina } from "@/components/rutina/FormularioRutina";
-import { Dumbbell, Lock, ShieldAlert } from "lucide-react";
+import { Dumbbell, Lock, ShieldAlert, UserCog } from "lucide-react";
 
 export default async function RutinaPage() {
   const supabase = await createClient();
@@ -78,6 +79,30 @@ export default async function RutinaPage() {
 
   // Estado 2: Renovación habilitada — mostrar formulario
   if (tieneRenovacion && profile) {
+    if (!profile.perfil_completo) {
+      return (
+        <div className="p-4 space-y-4">
+          <h1 className="text-xl font-bold">Generar Mi Rutina</h1>
+          
+          <div className="flex flex-col items-center text-center space-y-4 mt-8 bg-card border border-border p-6 rounded-xl">
+            <div className="rounded-full bg-primary/10 p-4">
+              <UserCog className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-lg font-bold">Perfil Incompleto</h2>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Para que la inteligencia artificial pueda crear una rutina segura y totalmente adaptada a ti, primero necesitamos que completes tus medidas y datos físicos.
+            </p>
+            <Link 
+              href="/perfil" 
+              className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2.5 rounded-md font-medium text-sm transition-colors"
+            >
+              Completar mi perfil
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
     const incluyeNutricional = membresia?.plan_nutricional_habilitado === true;
     return (
       <div className="p-4 space-y-4">

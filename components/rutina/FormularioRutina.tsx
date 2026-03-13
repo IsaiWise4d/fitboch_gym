@@ -189,8 +189,8 @@ export function FormularioRutina({ profile }: { profile: Profile }) {
       biotipo: "mixto",
       tiempo_entrenando: "menos_3_meses",
       zonas_prioritarias: "todo_cuerpo",
-      porcentaje_grasa: "",
-      lesiones: "",
+      porcentaje_grasa: profile.porcentaje_grasa || "",
+      lesiones: profile.lesiones || "",
       notas_adicionales: "",
     },
   });
@@ -245,7 +245,14 @@ export function FormularioRutina({ profile }: { profile: Profile }) {
           {profile.peso_kg ? `${profile.peso_kg}kg` : "Peso no definido"} ·{" "}
           {profile.altura_cm ? `${profile.altura_cm}cm` : "Altura no definida"}
         </p>
-        <p className="text-xs text-muted-foreground">
+        {(profile.porcentaje_grasa || profile.lesiones) && (
+          <p className="text-sm text-muted-foreground mt-1">
+            {profile.porcentaje_grasa && `Grasa: ${profile.porcentaje_grasa}% `} 
+            {profile.porcentaje_grasa && profile.lesiones && '· '}
+            {profile.lesiones && `Lesiones: ${profile.lesiones}`}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground pt-1">
           Puedes actualizar estos datos en tu perfil antes de generar la rutina.
         </p>
       </div>
@@ -342,12 +349,13 @@ export function FormularioRutina({ profile }: { profile: Profile }) {
 
         {/* % Grasa corporal */}
         <div className="space-y-2">
-          <Label htmlFor="porcentaje_grasa">% Grasa corporal (opcional)</Label>
+          <Label htmlFor="porcentaje_grasa">% Grasa corporal</Label>
           <Input
             id="porcentaje_grasa"
             type="number"
             step="0.1"
-            placeholder="Ej: 18"
+            disabled
+            placeholder="Desde el perfil"
             {...register("porcentaje_grasa")}
           />
         </div>
@@ -355,10 +363,11 @@ export function FormularioRutina({ profile }: { profile: Profile }) {
 
       {/* Lesiones */}
       <div className="space-y-2">
-        <Label htmlFor="lesiones">Lesiones o limitaciones (opcional)</Label>
+        <Label htmlFor="lesiones">Lesiones o limitaciones</Label>
         <Input
           id="lesiones"
-          placeholder="Ej: dolor en rodilla derecha, no puedo correr..."
+          disabled
+          placeholder="Desde el perfil"
           {...register("lesiones")}
         />
       </div>

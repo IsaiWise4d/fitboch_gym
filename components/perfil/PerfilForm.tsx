@@ -19,6 +19,8 @@ interface PerfilFormData {
   peso_kg: string;
   altura_cm: string;
   genero: string;
+  porcentaje_grasa: string;
+  lesiones: string;
 }
 
 export function PerfilForm({ profile }: { profile: Profile }) {
@@ -43,6 +45,8 @@ export function PerfilForm({ profile }: { profile: Profile }) {
       peso_kg: profile.peso_kg?.toString() || "",
       altura_cm: profile.altura_cm?.toString() || "",
       genero: profile.genero || "",
+      porcentaje_grasa: profile.porcentaje_grasa || "",
+      lesiones: profile.lesiones || "",
     },
   });
 
@@ -75,6 +79,8 @@ export function PerfilForm({ profile }: { profile: Profile }) {
         peso_kg: data.peso_kg ? Number(data.peso_kg) : null,
         altura_cm: data.altura_cm ? Number(data.altura_cm) : null,
         genero: (data.genero as "masculino" | "femenino") || null,
+        porcentaje_grasa: data.porcentaje_grasa || null,
+        lesiones: data.lesiones || null,
         perfil_completo: !!tieneDataEsencial,
       })
       .eq("id", profile.id);
@@ -108,6 +114,7 @@ export function PerfilForm({ profile }: { profile: Profile }) {
           <Label htmlFor="nombre">Nombre</Label>
           <Input
             id="nombre"
+            disabled={profile.perfil_completo}
             {...register("nombre", { required: "El nombre es requerido" })}
           />
           {errors.nombre && (
@@ -117,7 +124,7 @@ export function PerfilForm({ profile }: { profile: Profile }) {
 
         <div className="space-y-2">
           <Label htmlFor="apellido">Apellido</Label>
-          <Input id="apellido" {...register("apellido")} />
+          <Input id="apellido" disabled={profile.perfil_completo} {...register("apellido")} />
         </div>
 
         <div className="space-y-2">
@@ -125,6 +132,7 @@ export function PerfilForm({ profile }: { profile: Profile }) {
           <Input
             id="telefono"
             type="tel"
+            disabled={profile.perfil_completo}
             placeholder="+57 300 123 4567"
             {...register("telefono")}
           />
@@ -136,6 +144,7 @@ export function PerfilForm({ profile }: { profile: Profile }) {
             <Input
               id="fecha_nacimiento"
               type="date"
+              disabled={profile.perfil_completo}
               {...register("fecha_nacimiento")}
             />
             {edadCalculada !== null && (
@@ -148,8 +157,11 @@ export function PerfilForm({ profile }: { profile: Profile }) {
             <Label htmlFor="genero">Género</Label>
             <select
               id="genero"
+              disabled={profile.perfil_completo}
               {...register("genero")}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className={`flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+                profile.perfil_completo ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
               <option value="">Seleccionar</option>
               <option value="masculino">Hombre</option>
@@ -178,6 +190,24 @@ export function PerfilForm({ profile }: { profile: Profile }) {
               {...register("altura_cm")}
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="porcentaje_grasa">Porcentaje de Grasa (%)</Label>
+          <Input
+            id="porcentaje_grasa"
+            placeholder="Ej: 15%"
+            {...register("porcentaje_grasa")}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="lesiones">Lesiones o limitaciones</Label>
+          <Input
+            id="lesiones"
+            placeholder="Ej: Molestia en rodilla derecha..."
+            {...register("lesiones")}
+          />
         </div>
 
         {message && (

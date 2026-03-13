@@ -70,7 +70,7 @@ const ZONAS_LABEL: Record<string, string> = {
 const EQUIPAMIENTO_DETALLE_GYM = `
 Gimnasio FitBoch equipado con:
 - Máquinas: aductores, extensión femoral tumbado, sentadilla Smith, prensa (pies cerrados y abiertos), extensión de cuádriceps, pec deck, predicador, remo T, máquina de abdomen
-- Poleas: polea alta y baja, jalón en polea, remo en polea, jalón a una mano, remo a una mano, curl en polea, tríceps en polea, elevación lateral en polea, patada en polea
+- Poleas: polea alta y baja, jalón en polea (IMPORTANTE: no contamos con agarre neutro, usar solo prono o supino), remo en polea, jalón a una mano, remo a una mano, curl en polea, tríceps en polea, elevación lateral en polea, patada en polea
 - Barras y mancuernas: barra olímpica, barra Z, mancuernas (todo rango), kettlebell rusa
 - Bancos y accesorios: banco plano, banco inclinado, cajón pliométrico, balón Bosu, hip thrust
 - Ejercicios libres: sentadilla libre, sentadilla búlgara, sentadilla sumo, press plano/inclinado/militar/francés, peso muerto, dominadas, fondos, push-ups, elevaciones laterales, caminata del granjero, hip thrust, zancadas, puente de glúteo, burpees, plancha, hollow hold, crunch, elevación de piernas, elevación de talones, pullover, remo con mancuerna`;
@@ -146,17 +146,27 @@ Con los datos anteriores, genera un plan completo estructurado de la siguiente f
 - **Fase 4** — Recomposición / peak: cardio estratégico, definición, deload final
 - Incluye una semana de deload entre fases 2–3 y al final de la fase 4
 
-### B. Rutina semanal detallada
+### B. Rutina semanal detallada (ESTRICTAMENTE 7 DÍAS)
+- Debes estructurar la rutina obligatoriamente en 7 días, correspondiendo a los 7 días de la semana, usando este formato exacto:
+  "#### **Día 1 (Lunes): [Grupo Muscular o Descanso]**"
+  "#### **Día 2 (Martes): [Grupo Muscular o Descanso]**"
+  ... inclusive hasta el:
+  "#### **Día 7 (Domingo): [Grupo Muscular o Descanso]**"
 - Selecciona la división muscular óptima según los días disponibles:
-  - 2–3 días → Full Body
+  - 2-3 días → Full Body
   - 4 días → Upper/Lower o Torso-Pierna
-  - 5–6 días → Push/Pull/Legs (PPL) o especialización
+  - 5-6 días → Push/Pull/Legs (PPL) o especialización
 - Para cada día de entrenamiento, genera una tabla con:
-  **Ejercicio | Series | Reps | RIR/RPE | Tempo | Descanso (seg)**
-- Prioriza ejercicios compuestos primero; aislados al final
-- Garantiza frecuencia 2x/semana por grupo muscular
-- Aplica sobrecarga progresiva semanal (carga, volumen o densidad)
-- Incluye calentamiento general (5–8 min) y específico articular antes de cada sesión
+  **Ejercicio | Series | Reps | RIR/RPE | Tempo | Descanso (min)**
+- NO DUPLIQUES ejercicios solo para indicar fases distintas en la tabla de un mimo día (ej. no pongas "Fase 1: Sentadilla", "Fase 2: Sentadilla"). La tabla debe mostrar la rutina tipo a seguir durante el ciclo, y las progresiones se explican en la sección de "Progresión semanal".
+- Varía el número de Series y el RIR/RPE de forma inteligente según el ejercicio (compuesto vs aislado), la fase y el nivel. Evita poner sistemáticamente "3 series" o "RIR 3-4" en toda la tabla; adapta el volumen e intensidad a nivel de ejercicio (ej. 4 series para compuestos, 2 para aislados, RIR 1-2, etc.).
+- Asigna tiempos de descanso largos y exprésalos estrictamente en minutos, entre 2 y 3 minutos (ej. "2", "2.5", "3") para permitir una recuperación completa y un mayor rendimiento.
+- Para los días que no hay entrenamiento, simplemente indica que es descanso:
+  Ej: "#### **Día 3 (Miércoles): Descanso Activo / Cardio LISS**" o "#### **Día 7 (Domingo): Descanso Total**" (sin tabla).
+- Prioriza ejercicios compuestos primero; aislados al final.
+- Garantiza frecuencia 2x/semana por grupo muscular.
+- Aplica sobrecarga progresiva semanal (carga, volumen o densidad).
+- Incluye calentamiento general (5-8 min) y específico articular antes de cada sesión.
 
 ### C. Recomendaciones técnicas de ejercicios clave
 - Para los 5–8 ejercicios principales: cues de activación, errores frecuentes y variantes de regresión/progresión
@@ -183,16 +193,17 @@ ${incluirNutricional ? `
 
 La respuesta debe seguir este orden exacto:
 
-1. **Resumen ejecutivo del plan** — Objetivo, nivel, días, duración y enfoque en 3–5 líneas
+1. **Resumen ejecutivo del plan** — Objetivo, nivel, días, duración y enfoque en 3-5 líneas
 2. **Cronograma de fases** — Tabla con fases, semanas, enfoque, volumen e intensidad
-3. **Rutina semanal — Semana tipo** — Tablas día a día con ejercicio, series, reps, RIR, tempo, descanso
+3. **Rutina semanal (Los 7 días)** — Día 1 al Día 7 obligatoriamente, indicando si hay entrenamiento con su tabla o si es descanso.
 4. **Progresión semanal** — Cómo aumentan carga/volumen/densidad cada semana
-5. **Guía técnica de ejercicios clave** — Cues, errores y variantes
 6. **Cardio y recuperación activa** — Protocolo HIIT/LISS
 ${incluirNutricional ? `7. **Plan nutricional** — Calorías, macros, timing, suplementación
 8. **Sistema de seguimiento** — Métricas y criterios de ajuste
 9. **Justificación científica breve** — 1–2 párrafos que respalden las decisiones clave` : `7. **Sistema de seguimiento** — Métricas y criterios de ajuste
 8. **Justificación científica breve** — 1–2 párrafos que respalden las decisiones clave
+10. **Guía técnica de ejercicios clave** — Cues, errores y variantes
+
 
 **IMPORTANTE: NO incluyas plan nutricional en la respuesta. El usuario no tiene este servicio habilitado.**`}
 
@@ -204,6 +215,8 @@ ${incluirNutricional ? `7. **Plan nutricional** — Calorías, macros, timing, s
 - Recomendar esteroides, prohormones o sustancias prohibidas
 - Generar planes genéricos sin considerar los datos específicos del usuario
 - Incluir ejercicios contraindicados con las lesiones declaradas
+- Recomendar "agarre neutro" para jalones o dominadas (no hay ese implemento en el gimnasio)
+- Entregar menos días de entrenamiento de los indicados. Si el usuario escoge 5 días en sus datos, GENERA EXACTAMENTE 5 DÍAS DE GIMNASIO (con su tabla) y 2 de descanso, independientemente de la división sugerida.
 - Superar los días o tiempo de sesión disponibles
 - Omitir calentamiento, deloads o protocolo de recuperación
 - Recomendar déficit calórico mayor a 500 kcal/día o superávit mayor a 350 kcal/día

@@ -19,6 +19,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    // 1.5 Verificar que el perfil esté completo
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("perfil_completo")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.perfil_completo) {
+      return NextResponse.json(
+        { error: "Debes completar tu perfil antes de generar una rutina" },
+        { status: 403 }
+      );
+    }
+
     // 2. Verificar que tenga renovación habilitada
     const { data: membresia } = await supabase
       .from("membresias")

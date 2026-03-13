@@ -22,6 +22,8 @@ export interface Database {
           altura_cm: number | null;
           genero: "masculino" | "femenino" | null;
           telefono: string | null;
+          porcentaje_grasa: string | null;
+          lesiones: string | null;
           rol: "usuario" | "admin";
           activo: boolean;
           perfil_completo: boolean;
@@ -38,6 +40,8 @@ export interface Database {
           altura_cm?: number | null;
           genero?: "masculino" | "femenino" | null;
           telefono?: string | null;
+          porcentaje_grasa?: string | null;
+          lesiones?: string | null;
           rol?: "usuario" | "admin";
           activo?: boolean;
           perfil_completo?: boolean;
@@ -54,6 +58,8 @@ export interface Database {
           altura_cm?: number | null;
           genero?: "masculino" | "femenino" | null;
           telefono?: string | null;
+          porcentaje_grasa?: string | null;
+          lesiones?: string | null;
           rol?: "usuario" | "admin";
           activo?: boolean;
           perfil_completo?: boolean;

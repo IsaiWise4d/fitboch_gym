@@ -14,6 +14,8 @@ CREATE TABLE profiles (
   edad          INTEGER,
   peso_kg       DECIMAL(5,2),
   altura_cm     INTEGER,
+  porcentaje_grasa TEXT,
+  lesiones      TEXT,
   genero        TEXT CHECK (genero IN ('masculino', 'femenino', 'otro')),
   rol           TEXT DEFAULT 'usuario' CHECK (rol IN ('usuario', 'admin')),
   activo        BOOLEAN DEFAULT TRUE
