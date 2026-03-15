@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import MDEditor from "@uiw/react-md-editor";
-import "@uiw/react-md-editor/markdown-editor.css";
-import "@uiw/react-markdown-preview/markdown.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +23,15 @@ import {
 import { format, parseISO, addMonths, addDays, isBefore, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Profile, Membresia } from "@/types/app";
+
+const RutinaEditor = dynamic(() => import("@/components/admin/RutinaEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-32 items-center justify-center rounded-md border border-border bg-white/5">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+    </div>
+  ),
+});
 
 type RutinaResumen = {
   id: string;
@@ -535,87 +542,55 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
         )}
 
         {rutinaActiva && (
-          <>
-            {/* Aviso versión móvil */}
-            <div className="md:hidden flex flex-col items-center justify-center p-4 text-center border border-dashed border-border rounded-lg bg-white/5 mt-2">
-              <AlertTriangle className="h-6 w-6 text-warning mb-2 opacity-80" />
-              <p className="text-sm text-muted-foreground">
-                El texto de la rutina puede contener tablas grandes. Te recomendamos visualizar o editar esta sección desde una computadora.
-              </p>
-            </div>
-
-            {/* Vista en PC (o pantallas md/grandes) */}
-            <div className="hidden md:block min-w-0 space-y-2 rounded-lg border border-border bg-white/5 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-medium">Texto de la rutina activa</p>
-                {!editandoRutina ? (
+          <div className="min-w-0 space-y-2 rounded-lg border border-border bg-white/5 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium">Texto de la rutina activa</p>
+              {!editandoRutina ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => setEditandoRutina(true)}
+                >
+                  Editar texto de la rutina
+                </Button>
+              ) : (
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full sm:w-auto"
-                    onClick={() => setEditandoRutina(true)}
-                  >
-                    Editar texto
-                  </Button>
-                ) : (
-                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 sm:flex-none"
-                      onClick={() => {
-                        setTextoRutinaEdit(rutinaActiva.texto_rutina);
-                        setEditandoRutina(false);
-                      }}
-                      disabled={loading === "editar-rutina"}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1 sm:flex-none"
-                      onClick={handleGuardarTextoRutina}
-                      disabled={loading === "editar-rutina" || !textoRutinaEdit.trim()}
-                    >
-                      {loading === "editar-rutina" ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : null}
-                      Guardar
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {editandoRutina ? (
-                <div
-                  data-color-mode="dark"
-                  className="admin-rutina-editor max-w-full overflow-x-auto rounded-md border border-border"
-                >
-                  <MDEditor
-                    value={textoRutinaEdit}
-                    onChange={(value) => setTextoRutinaEdit(value || "")}
-                    preview="live"
-                    height={420}
-                    visibleDragbar={false}
-                  />
-                </div>
-              ) : (
-                <div data-color-mode="dark" className="w-full min-w-0 max-w-full max-h-[420px] overflow-x-auto overflow-y-auto rounded-md border border-border bg-background p-3">
-                  <MDEditor.Markdown
-                    source={rutinaActiva.texto_rutina}
-                    style={{
-                      backgroundColor: "transparent",
-                      color: "inherit",
-                      fontSize: "0.8rem",
-                      lineHeight: 1.6,
-                      maxWidth: "100%",
-                      wordBreak: "break-word",
+                    className="flex-1 sm:flex-none"
+                    onClick={() => {
+                      setTextoRutinaEdit(rutinaActiva.texto_rutina);
+                      setEditandoRutina(false);
                     }}
-                  />
+                    disabled={loading === "editar-rutina"}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    onClick={handleGuardarTextoRutina}
+                    disabled={loading === "editar-rutina" || !textoRutinaEdit.trim()}
+                  >
+                    {loading === "editar-rutina" ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : null}
+                    Guardar Cambios
+                  </Button>
                 </div>
               )}
             </div>
-          </>
+
+            <div className="mt-2">
+              <RutinaEditor
+                markdown={textoRutinaEdit}
+                onChange={(value) => setTextoRutinaEdit(value)}
+                readOnly={!editandoRutina}
+              />
+            </div>
+          </div>
         )}
 
         {/* Toggle plan nutricional (cuando tiene rutina activa) */}

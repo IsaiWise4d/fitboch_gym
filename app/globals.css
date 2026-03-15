@@ -200,41 +200,4 @@
   animation: fade-in 0.5s ease-out;
 }
 
-/* Editor markdown admin: evita desbordes en pantallas pequeñas */
-.admin-rutina-editor .w-md-editor,
-.admin-rutina-editor .w-md-editor-content,
-.admin-rutina-editor .w-md-editor-input,
-.admin-rutina-editor .w-md-editor-preview {
-  max-width: 100%;
-  min-width: 0;
-}
-
-.admin-rutina-editor .w-md-editor-toolbar {
-  overflow-x: auto;
-}
-
-.wmde-markdown {
-  max-width: 100%;
-  box-sizing: border-box;
-  word-wrap: break-word;
-}
-
-.wmde-markdown pre,
-.wmde-markdown table,
-.wmde-markdown img,
-.wmde-markdown code {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-@media (max-width: 768px) {
-  .admin-rutina-editor .w-md-editor-content {
-    flex-direction: column;
-  }
-
-  .admin-rutina-editor .w-md-editor-input,
-  .admin-rutina-editor .w-md-editor-preview {
-    width: 100% !important;
-  }
-}
 

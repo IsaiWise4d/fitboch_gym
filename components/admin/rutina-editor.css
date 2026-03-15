@@ -1,0 +1,78 @@
+/* rutina-editor.css */
+
+.rutina-mdx-editor {
+  --scrollbar-thumb: var(--muted);
+  --scrollbar-track: transparent;
+}
+
+.rutina-mdx-editor .mdxeditor {
+  color: var(--foreground) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.875rem !important;
+  width: 100%;
+}
+
+/* Solo aplicamos max-height cuando no se está editando 
+   o cuando se está editando para que no crezca infinito */
+.rutina-mdx-editor .mdxeditor-root-contenteditable {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.rutina-mdx-editor.read-only-mode .mdxeditor-root-contenteditable {
+  max-height: 420px;
+}
+
+.rutina-mdx-editor.editing-mode .mdxeditor-root-contenteditable {
+  min-height: 400px;
+}
+
+/* Responsive tables and images */
+.mdxeditor-root-contenteditable table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  overflow-x: auto;
+  display: block;
+}
+
+.mdxeditor-root-contenteditable th,
+.mdxeditor-root-contenteditable td {
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.mdxeditor-root-contenteditable th {
+  background-color: var(--surface);
+  font-weight: 600;
+}
+
+/* Resetear estilos del toolbar del plugin */
+.mdxeditor-toolbar {
+  border-bottom: 1px solid var(--border) !important;
+  background-color: var(--surface) !important;
+  color: var(--foreground) !important;
+}
+
+.mdxeditor-toolbar button {
+  color: var(--foreground) !important;
+}
+
+.mdxeditor-toolbar button:hover {
+  background-color: var(--muted) !important;
+}
+
+.mdxeditor-toolbar select {
+  background-color: var(--surface) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+/* Evitar que en móvil la edición sea incómoda */
+@media (max-width: 768px) {
+  .rutina-mdx-editor .mdxeditor-root-contenteditable {
+    padding: 0.5rem;
+  }
+}
