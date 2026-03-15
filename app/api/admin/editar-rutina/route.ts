@@ -22,46 +22,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const { membresia_id } = await request.json();
+    const { rutina_id, texto_rutina } = await request.json();
 
-    if (!membresia_id) {
+    if (!rutina_id || typeof texto_rutina !== "string") {
       return NextResponse.json(
-        { error: "membresia_id requerido" },
+        { error: "rutina_id y texto_rutina son requeridos" },
         { status: 400 }
       );
     }
 
-    // Si hay rutinas ligadas a esta membresía, eliminarlas primero
-    // para evitar errores por la FK rutinas_membresia_id_fkey.
-    const { error: rutinasDeleteError } = await supabase
-      .from("rutinas")
-      .delete()
-      .eq("membresia_id", membresia_id);
-
-    if (rutinasDeleteError) {
-      console.error("Error eliminando rutinas ligadas:", rutinasDeleteError);
+    const textoNormalizado = texto_rutina.trim();
+    if (!textoNormalizado) {
       return NextResponse.json(
-        { error: "Error al eliminar la rutina asociada" },
-        { status: 500 }
+        { error: "El texto de la rutina no puede estar vacío" },
+        { status: 400 }
       );
     }
 
-    const { error: deleteError } = await supabase
-      .from("membresias")
-      .delete()
-      .eq("id", membresia_id);
+    const { error: updateError } = await supabase
+      .from("rutinas")
+      .update({ texto_rutina: textoNormalizado })
+      .eq("id", rutina_id)
+      .eq("estado", "activa");
 
-    if (deleteError) {
-      console.error("Error eliminando membresía:", deleteError);
+    if (updateError) {
+      console.error("Error actualizando rutina:", updateError);
       return NextResponse.json(
-        { error: "Error al eliminar la membresía" },
+        { error: "Error al actualizar la rutina" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error en eliminar-membresia:", error);
+    console.error("Error en editar-rutina:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

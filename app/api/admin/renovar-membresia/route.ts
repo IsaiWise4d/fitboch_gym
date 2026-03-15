@@ -30,14 +30,67 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
     }
 
-    // Marcar membresías anteriores como vencidas
+    const hoy = new Date().toISOString().split("T")[0];
+
+    // Buscar membresías activas existentes (si existen varias, nos quedamos con la más reciente)
+    const { data: membresiasActivas, error: activasError } = await supabase
+      .from("membresias")
+      .select("id, fecha_fin")
+      .eq("usuario_id", usuario_id)
+      .eq("estado", "activa")
+      .order("fecha_fin", { ascending: false });
+
+    if (activasError) {
+      console.error("Error consultando membresías activas:", activasError);
+      return NextResponse.json(
+        { error: "Error al consultar la membresía actual" },
+        { status: 500 }
+      );
+    }
+
+    const membresiaVigente = (membresiasActivas ?? []).find(
+      (m) => m.fecha_fin >= hoy
+    );
+
+    // Si hay una vigente, se edita en lugar de crear una nueva
+    if (membresiaVigente) {
+      const { error: updateError } = await supabase
+        .from("membresias")
+        .update({
+          tipo_plan,
+          fecha_fin,
+          monto_pagado: monto_pagado || null,
+        })
+        .eq("id", membresiaVigente.id);
+
+      if (updateError) {
+        console.error("Error editando membresía vigente:", updateError);
+        return NextResponse.json(
+          { error: "Error al editar la membresía vigente" },
+          { status: 500 }
+        );
+      }
+
+      // Cerrar cualquier otra activa residual para evitar duplicados
+      const idsActivas = (membresiasActivas ?? []).map((m) => m.id);
+      const idsResidual = idsActivas.filter((id) => id !== membresiaVigente.id);
+      if (idsResidual.length > 0) {
+        await supabase
+          .from("membresias")
+          .update({ estado: "vencida" })
+          .in("id", idsResidual);
+      }
+
+      return NextResponse.json({ success: true, mode: "updated" });
+    }
+
+    // Si no hay vigente, se vencen activas antiguas residuales y se crea una nueva
     await supabase
       .from("membresias")
       .update({ estado: "vencida" })
       .eq("usuario_id", usuario_id)
       .eq("estado", "activa");
 
-    // Crear nueva membresía
     const { error: insertError } = await supabase.from("membresias").insert({
       usuario_id,
       tipo_plan,

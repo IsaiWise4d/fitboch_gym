@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,6 +21,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +33,12 @@ export function LoginForm() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+
+  useEffect(() => {
+    if (searchParams.get("error") === "disabled") {
+      setError("Tu cuenta está deshabilitada. Contacta al administrador.");
+    }
+  }, [searchParams]);
 
   async function onSubmit(data: LoginFormData) {
     setLoading(true);
@@ -55,9 +62,16 @@ export function LoginForm() {
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("rol")
+        .select("rol, activo")
         .eq("id", user.id)
         .single();
+
+      if (profile?.activo === false) {
+        await supabase.auth.signOut();
+        setError("Tu cuenta está deshabilitada. Contacta al administrador.");
+        setLoading(false);
+        return;
+      }
 
       if (profile?.rol === "admin") {
         router.push("/admin");

@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import MDEditor from "@uiw/react-md-editor";
+import "@uiw/react-md-editor/markdown-editor.css";
+import "@uiw/react-markdown-preview/markdown.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +19,10 @@ import {
   Sparkles,
   Trash2,
   User,
-  UserX,
   UserCheck,
+  UserX,
 } from "lucide-react";
-import { format, parseISO, addMonths, addDays } from "date-fns";
+import { format, parseISO, addMonths, addDays, isBefore, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Profile, Membresia } from "@/types/app";
 
@@ -29,6 +32,7 @@ type RutinaResumen = {
   duracion_plan: string;
   estado: "activa" | "archivada";
   modelo_ia: string;
+  texto_rutina: string;
 };
 
 interface Props {
@@ -52,12 +56,26 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
 
   const membresiaActiva = membresias.find((m) => m.estado === "activa") ?? null;
   const rutinaActiva = rutinas.find((r) => r.estado === "activa") ?? null;
+  const hoy = startOfDay(new Date());
+  const membresiaVigente = membresiaActiva
+    ? !isBefore(startOfDay(parseISO(membresiaActiva.fecha_fin)), hoy)
+    : false;
   const [confirmarNuevaRutina, setConfirmarNuevaRutina] = useState(false);
   const [confirmarEliminarMembresia, setConfirmarEliminarMembresia] = useState(false);
   const [confirmarEliminarUsuario, setConfirmarEliminarUsuario] = useState(false);
+  const [confirmarToggleUsuario, setConfirmarToggleUsuario] = useState(false);
+  const [editandoRutina, setEditandoRutina] = useState(false);
+  const [textoRutinaEdit, setTextoRutinaEdit] = useState(
+    rutinaActiva?.texto_rutina || ""
+  );
   const [incluirNutricional, setIncluirNutricional] = useState(
     membresiaActiva?.plan_nutricional_habilitado ?? false
   );
+
+  useEffect(() => {
+    setTextoRutinaEdit(rutinaActiva?.texto_rutina || "");
+    setEditandoRutina(false);
+  }, [rutinaActiva?.id, rutinaActiva?.texto_rutina]);
 
   // Renovar membresía
   const [tipoPlan, setTipoPlan] = useState<string>("mensual");
@@ -65,8 +83,12 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
   const [fechaFinManual, setFechaFinManual] = useState("");
   const [usarFechaManual, setUsarFechaManual] = useState(false);
 
+  const fechaBaseRenovacion = membresiaVigente && membresiaActiva
+    ? parseISO(membresiaActiva.fecha_fin)
+    : new Date();
+
   const fechaFinAuto = format(
-    addDays(addMonths(new Date(), PLAN_MESES[tipoPlan] || 1), -1),
+    addDays(addMonths(fechaBaseRenovacion, PLAN_MESES[tipoPlan] || 1), -1),
     "yyyy-MM-dd"
   );
 
@@ -161,6 +183,35 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
     }
   }
 
+  async function handleGuardarTextoRutina() {
+    if (!rutinaActiva) return;
+    setLoading("editar-rutina");
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/editar-rutina", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rutina_id: rutinaActiva.id,
+          texto_rutina: textoRutinaEdit,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al guardar la rutina");
+      } else {
+        setEditandoRutina(false);
+        router.refresh();
+      }
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setLoading(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -188,14 +239,14 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
           <User className="h-4 w-4 text-primary" />
           Datos del perfil
         </div>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Email</p>
-            <p>{profile.email}</p>
+            <p className="truncate">{profile.email}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Teléfono</p>
-            <p>{profile.telefono || "No definido"}</p>
+            <p className="truncate">{profile.telefono || "No definido"}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Género</p>
@@ -218,6 +269,14 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
               {profile.altura_cm ? `${profile.altura_cm}cm` : "--"}
             </p>
           </div>
+          <div>
+            <p className="text-xs text-muted-foreground">% Grasa corporal</p>
+            <p>{profile.porcentaje_grasa || "No definido"}</p>
+          </div>
+          <div className="md:col-span-2 min-w-0">
+            <p className="text-xs text-muted-foreground">Lesiones / limitaciones</p>
+            <p className="truncate">{profile.lesiones || "No definido"}</p>
+          </div>
         </div>
       </div>
 
@@ -229,8 +288,14 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
             Membresía actual
           </div>
           {membresiaActiva && (
-            <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full">
-              Activa
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                membresiaVigente
+                  ? "bg-success/20 text-success"
+                  : "bg-error/20 text-error"
+              }`}
+            >
+              {membresiaVigente ? "Activa" : "Vencida"}
             </span>
           )}
         </div>
@@ -252,7 +317,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
             <div>
               <p className="text-xs text-muted-foreground">Renovación rutina</p>
               <p>
-                {membresiaActiva.renovacion_habilitada
+                {membresiaVigente && membresiaActiva.renovacion_habilitada
                   ? "Habilitada"
                   : "No habilitada"}
               </p>
@@ -270,7 +335,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
           </p>
         )}
 
-        {/* Botón renovar */}
+        {/* Botón renovar / editar */}
         <Button
           variant="outline"
           size="sm"
@@ -278,12 +343,21 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
           onClick={() => setShowRenovar(!showRenovar)}
         >
           <RefreshCw className="h-4 w-4 mr-2" />
-          {membresiaActiva ? "Renovar membresía" : "Crear membresía"}
+          {membresiaVigente
+            ? "Editar membresía vigente"
+            : membresiaActiva
+              ? "Crear nueva membresía"
+              : "Crear membresía"}
         </Button>
 
         {/* Formulario renovar */}
         {showRenovar && (
           <div className="space-y-3 pt-2 border-t border-border">
+            <p className="text-xs text-muted-foreground">
+              {membresiaVigente
+                ? "La membresía actual está vigente: esta acción la editará y ajustará su fecha fin."
+                : "No hay membresía vigente: esta acción creará una nueva membresía activa."}
+            </p>
             <div className="space-y-2">
               <Label>Tipo de plan</Label>
               <select
@@ -318,12 +392,14 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
                   type="date"
                   value={fechaFinManual}
                   onChange={(e) => setFechaFinManual(e.target.value)}
+                  onKeyDown={(e) => e.preventDefault()}
+                  inputMode="none"
                   min={format(new Date(), "yyyy-MM-dd")}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground px-3 py-1.5 rounded-md border border-border bg-white/5">
                   {format(parseISO(fechaFinAuto), "d MMM yyyy", { locale: es })}
-                  <span className="text-xs ml-2 opacity-60">(auto)</span>
+                  <span className="text-xs ml-2 opacity-60">(auto{membresiaVigente ? " desde fin actual" : ""})</span>
                 </p>
               )}
             </div>
@@ -348,7 +424,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              Confirmar renovación
+              {membresiaVigente ? "Guardar cambios de membresía" : "Confirmar creación"}
             </Button>
           </div>
         )}
@@ -456,6 +532,71 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
               ? "Esperando que el usuario genere su rutina"
               : "Sin rutina generada"}
           </p>
+        )}
+
+        {rutinaActiva && (
+          <div className="space-y-2 rounded-lg border border-border bg-white/5 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Texto de la rutina activa</p>
+              {!editandoRutina ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditandoRutina(true)}
+                >
+                  Editar texto
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setTextoRutinaEdit(rutinaActiva.texto_rutina);
+                      setEditandoRutina(false);
+                    }}
+                    disabled={loading === "editar-rutina"}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleGuardarTextoRutina}
+                    disabled={loading === "editar-rutina" || !textoRutinaEdit.trim()}
+                  >
+                    {loading === "editar-rutina" ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : null}
+                    Guardar
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {editandoRutina ? (
+              <div data-color-mode="dark" className="overflow-hidden rounded-md border border-border">
+                <MDEditor
+                  value={textoRutinaEdit}
+                  onChange={(value) => setTextoRutinaEdit(value || "")}
+                  preview="live"
+                  height={420}
+                  visibleDragbar={false}
+                />
+              </div>
+            ) : (
+              <div data-color-mode="dark" className="max-h-[420px] overflow-auto rounded-md border border-border bg-background p-3">
+                <MDEditor.Markdown
+                  source={rutinaActiva.texto_rutina}
+                  style={{
+                    backgroundColor: "transparent",
+                    color: "inherit",
+                    fontSize: "0.8rem",
+                    lineHeight: 1.6,
+                  }}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         {/* Toggle plan nutricional (cuando tiene rutina activa) */}
@@ -586,31 +727,34 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
         <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
           <p className="text-sm font-medium">Historial de membresías</p>
           <div className="divide-y divide-border">
-            {membresias.map((m) => (
-              <div key={m.id} className="py-2 flex items-center justify-between text-sm">
-                <div>
-                  <p className="capitalize">
-                    {m.tipo_plan}
-                    {m.monto_pagado ? ` · $${m.monto_pagado}` : ""}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(parseISO(m.fecha_inicio), "d MMM yyyy", { locale: es })} →{" "}
-                    {format(parseISO(m.fecha_fin), "d MMM yyyy", { locale: es })}
-                  </p>
+            {membresias.map((m) => {
+              const estaVigente = !isBefore(startOfDay(parseISO(m.fecha_fin)), hoy);
+              const estadoLabel = estaVigente ? "activa" : "vencida";
+
+              return (
+                <div key={m.id} className="py-2 flex items-center justify-between text-sm">
+                  <div>
+                    <p className="capitalize">
+                      {m.tipo_plan}
+                      {m.monto_pagado ? ` · $${m.monto_pagado}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(parseISO(m.fecha_inicio), "d MMM yyyy", { locale: es })} →{" "}
+                      {format(parseISO(m.fecha_fin), "d MMM yyyy", { locale: es })}
+                    </p>
+                  </div>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      estaVigente
+                        ? "bg-success/20 text-success"
+                        : "bg-error/20 text-error"
+                    }`}
+                  >
+                    {estadoLabel}
+                  </span>
                 </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    m.estado === "activa"
-                      ? "bg-success/20 text-success"
-                      : m.estado === "vencida"
-                        ? "bg-error/20 text-error"
-                        : "bg-white/10 text-muted-foreground"
-                  }`}
-                >
-                  {m.estado}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -635,7 +779,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
         </div>
       )}
 
-      {/* Eliminar / Restaurar usuario */}
+      {/* Desactivar / Reactivar usuario */}
       <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
         {!profile.activo && (
           <div className="rounded-md bg-error/10 p-2 text-xs text-error text-center mb-2">
@@ -643,7 +787,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
           </div>
         )}
 
-        {!confirmarEliminarUsuario ? (
+        {!confirmarToggleUsuario ? (
           <Button
             variant="outline"
             size="sm"
@@ -652,12 +796,12 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
                 ? "text-error border-error/30 hover:bg-error/10"
                 : "text-success border-success/30 hover:bg-success/10"
             }`}
-            onClick={() => setConfirmarEliminarUsuario(true)}
+            onClick={() => setConfirmarToggleUsuario(true)}
           >
             {profile.activo ? (
               <><UserX className="h-4 w-4 mr-2" /> Desactivar usuario</>
             ) : (
-              <><UserCheck className="h-4 w-4 mr-2" /> Restaurar usuario</>
+              <><UserCheck className="h-4 w-4 mr-2" /> Reactivar usuario</>
             )}
           </Button>
         ) : (
@@ -670,19 +814,19 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
               profile.activo ? "text-error" : "text-success"
             }`}>
               <AlertTriangle className="h-4 w-4" />
-              {profile.activo ? "¿Desactivar usuario?" : "¿Restaurar usuario?"}
+              {profile.activo ? "¿Desactivar usuario?" : "¿Reactivar usuario?"}
             </div>
             <p className="text-xs text-muted-foreground">
               {profile.activo
-                ? "El usuario dejará de aparecer en la lista de usuarios. No se elimina ningún dato, solo se oculta."
-                : "El usuario volverá a aparecer en la lista y podrá acceder normalmente."}
+                ? "El usuario no podrá iniciar sesión ni usar el sistema mientras esté desactivado."
+                : "El usuario volverá a poder acceder normalmente al sistema."}
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 className="flex-1"
-                onClick={() => setConfirmarEliminarUsuario(false)}
+                onClick={() => setConfirmarToggleUsuario(false)}
               >
                 Cancelar
               </Button>
@@ -709,7 +853,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
                     if (!res.ok) {
                       setError(data.error || "Error al actualizar");
                     } else {
-                      setConfirmarEliminarUsuario(false);
+                      setConfirmarToggleUsuario(false);
                       router.refresh();
                     }
                   } catch {
@@ -727,7 +871,81 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
                 ) : (
                   <UserCheck className="h-4 w-4 mr-2" />
                 )}
-                {profile.activo ? "Sí, desactivar" : "Sí, restaurar"}
+                {profile.activo ? "Sí, desactivar" : "Sí, reactivar"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Eliminar usuario */}
+      <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+        {!confirmarEliminarUsuario ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-error border-error/30 hover:bg-error/10"
+            onClick={() => setConfirmarEliminarUsuario(true)}
+          >
+            <>
+              <Trash2 className="h-4 w-4 mr-2" /> Eliminar usuario permanentemente
+            </>
+          </Button>
+        ) : (
+          <div className="rounded-lg border border-error/50 bg-error/10 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-error">
+              <AlertTriangle className="h-4 w-4" />
+              ¿Eliminar usuario permanentemente?
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Esta acción eliminará en cadena sus rutinas, membresías, logs de acceso,
+              perfil y cuenta de autenticación. No se puede deshacer.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setConfirmarEliminarUsuario(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 bg-error text-white hover:bg-error/80"
+                onClick={async () => {
+                  setLoading("delete-user");
+                  setError(null);
+                  try {
+                    const res = await fetch("/api/admin/eliminar-usuario", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        usuario_id: profile.id,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setError(data.error || "Error al eliminar");
+                    } else {
+                      setConfirmarEliminarUsuario(false);
+                      router.push("/admin/usuarios");
+                      router.refresh();
+                    }
+                  } catch {
+                    setError("Error de conexión");
+                  } finally {
+                    setLoading(null);
+                  }
+                }}
+                disabled={loading === "delete-user"}
+              >
+                {loading === "delete-user" ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Sí, eliminar por completo
               </Button>
             </div>
           </div>

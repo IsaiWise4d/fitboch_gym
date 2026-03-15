@@ -13,7 +13,7 @@ type UsuarioConMembresia = Profile & {
   membresias: Membresia[];
 };
 
-type Filtro = "todos" | "activos" | "por_vencer" | "vencidos" | "sin_membresia";
+type Filtro = "todos" | "activos" | "por_vencer" | "vencidos" | "sin_membresia" | "desactivados";
 
 function getMembresiaActiva(membresias: Membresia[]): Membresia | null {
   return (
@@ -33,6 +33,16 @@ function getEstado(membresia: Membresia | null): {
   if (isBefore(fin, hoy)) return { label: "Vencida", color: "text-error" };
   if (isBefore(fin, addDays(hoy, 7))) return { label: "Por vencer", color: "text-warning" };
   return { label: "Activa", color: "text-success" };
+}
+
+function getEstadoUsuario(usuario: UsuarioConMembresia): {
+  label: string;
+  color: string;
+} {
+  if (!usuario.activo) {
+    return { label: "Desactivado", color: "text-error" };
+  }
+  return getEstado(getMembresiaActiva(usuario.membresias));
 }
 
 export function TablaUsuarios({
@@ -60,8 +70,7 @@ export function TablaUsuarios({
     // Filtro por estado
     if (filtro !== "todos") {
       resultado = resultado.filter((u) => {
-        const mem = getMembresiaActiva(u.membresias);
-        const estado = getEstado(mem);
+        const estado = getEstadoUsuario(u);
         switch (filtro) {
           case "activos":
             return estado.label === "Activa";
@@ -71,6 +80,8 @@ export function TablaUsuarios({
             return estado.label === "Vencida";
           case "sin_membresia":
             return estado.label === "Sin membresía";
+          case "desactivados":
+            return estado.label === "Desactivado";
           default:
             return true;
         }
@@ -86,6 +97,7 @@ export function TablaUsuarios({
     { value: "por_vencer", label: "Por vencer" },
     { value: "vencidos", label: "Vencidos" },
     { value: "sin_membresia", label: "Sin membresía" },
+    { value: "desactivados", label: "Desactivados" },
   ];
 
   return (
@@ -132,7 +144,7 @@ export function TablaUsuarios({
         ) : (
           filtrados.map((u) => {
             const mem = getMembresiaActiva(u.membresias);
-            const estado = getEstado(mem);
+            const estado = getEstadoUsuario(u);
             return (
               <Link
                 key={u.id}
@@ -152,7 +164,7 @@ export function TablaUsuarios({
                     <p className={`text-xs font-medium ${estado.color}`}>
                       {estado.label}
                     </p>
-                    {mem && (
+                    {u.activo && mem && (
                       <p className="text-xs text-muted-foreground">
                         {mem.tipo_plan} · {format(parseISO(mem.fecha_fin), "d MMM", { locale: es })}
                       </p>

@@ -15,7 +15,6 @@ export default async function UsuariosPage() {
     .from("profiles")
     .select("*, membresias(*)")
     .eq("rol", "usuario")
-    .eq("activo", true)
     .order("created_at", { ascending: false });
 
   return (

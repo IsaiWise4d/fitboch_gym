@@ -49,28 +49,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Authenticated on public path -> redirect to dashboard
-  if (user && isPublicPath) {
+  if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("rol")
+      .select("rol, activo")
       .eq("id", user.id)
       .single();
 
-    const url = request.nextUrl.clone();
-    url.pathname = profile?.rol === "admin" ? "/admin" : "/dashboard";
-    return NextResponse.redirect(url);
-  }
+    // Usuario desactivado: no permitir acceso a la app
+    if (profile?.activo === false) {
+      if (!(isPublicPath && pathname === "/login")) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        url.searchParams.set("error", "disabled");
+        return NextResponse.redirect(url);
+      }
 
-  // Protect admin routes
-  if (user && pathname.startsWith("/admin")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("rol")
-      .eq("id", user.id)
-      .single();
+      return supabaseResponse;
+    }
 
-    if (profile?.rol !== "admin") {
+    // Authenticated on public path -> redirect to dashboard
+    if (isPublicPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = profile?.rol === "admin" ? "/admin" : "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // Protect admin routes
+    if (pathname.startsWith("/admin") && profile?.rol !== "admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);

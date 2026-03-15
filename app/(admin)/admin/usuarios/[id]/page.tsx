@@ -25,7 +25,7 @@ export default async function UsuarioDetallePage({ params }: Props) {
         .order("fecha_fin", { ascending: false }),
       supabase
         .from("rutinas")
-        .select("id, created_at, duracion_plan, estado, modelo_ia")
+        .select("id, created_at, duracion_plan, estado, modelo_ia, texto_rutina")
         .eq("usuario_id", id)
         .order("created_at", { ascending: false }),
     ]);
