@@ -213,7 +213,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-full space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link
@@ -535,22 +535,24 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
         )}
 
         {rutinaActiva && (
-          <div className="space-y-2 rounded-lg border border-border bg-white/5 p-3">
-            <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 space-y-2 rounded-lg border border-border bg-white/5 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-medium">Texto de la rutina activa</p>
               {!editandoRutina ? (
                 <Button
                   variant="outline"
                   size="sm"
+                  className="w-full sm:w-auto"
                   onClick={() => setEditandoRutina(true)}
                 >
                   Editar texto
                 </Button>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="flex-1 sm:flex-none"
                     onClick={() => {
                       setTextoRutinaEdit(rutinaActiva.texto_rutina);
                       setEditandoRutina(false);
@@ -561,6 +563,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
                   </Button>
                   <Button
                     size="sm"
+                    className="flex-1 sm:flex-none"
                     onClick={handleGuardarTextoRutina}
                     disabled={loading === "editar-rutina" || !textoRutinaEdit.trim()}
                   >
@@ -574,7 +577,10 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
             </div>
 
             {editandoRutina ? (
-              <div data-color-mode="dark" className="overflow-hidden rounded-md border border-border">
+              <div
+                data-color-mode="dark"
+                className="admin-rutina-editor max-w-full overflow-x-auto rounded-md border border-border"
+              >
                 <MDEditor
                   value={textoRutinaEdit}
                   onChange={(value) => setTextoRutinaEdit(value || "")}
