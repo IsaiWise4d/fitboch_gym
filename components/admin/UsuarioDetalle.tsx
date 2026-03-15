@@ -541,6 +541,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
           </p>
         )}
 
+        {/* AVISO SOLO PC PARA EDITAR RUTINA */}
         {rutinaActiva && (
           <div className="min-w-0 space-y-2 rounded-lg border border-border bg-white/5 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -549,7 +550,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto md:block hidden"
                   onClick={() => setEditandoRutina(true)}
                 >
                   Editar texto de la rutina
@@ -582,13 +583,18 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
                 </div>
               )}
             </div>
-
-            <div className="mt-2">
+            {/* Solo mostrar editor en PC */}
+            <div className="mt-2 hidden md:block">
               <RutinaEditor
                 markdown={textoRutinaEdit}
                 onChange={(value) => setTextoRutinaEdit(value)}
                 readOnly={!editandoRutina}
               />
+            </div>
+            {/* Aviso en móvil */}
+            <div className="block md:hidden rounded-md border border-dashed border-warning bg-warning/10 p-3 text-warning text-center text-sm">
+              <AlertTriangle className="inline-block mr-2 align-text-bottom" />
+              La edición de la rutina solo está disponible desde una computadora. Para evitar errores de formato, por favor edita este texto desde un PC.
             </div>
           </div>
         )}

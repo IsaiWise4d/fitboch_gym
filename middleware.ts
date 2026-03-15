@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public paths
-  const publicPaths = ["/login", "/recuperar-password"];
+  const publicPaths = ["/login", "/recuperar-password", "/auth/callback"];
   const isPublicPath = publicPaths.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
@@ -68,8 +68,8 @@ export async function middleware(request: NextRequest) {
       return supabaseResponse;
     }
 
-    // Authenticated on public path -> redirect to dashboard
-    if (isPublicPath) {
+    // Authenticated on public path (except callback) -> redirect to dashboard
+    if (isPublicPath && !pathname.startsWith("/auth/callback")) {
       const url = request.nextUrl.clone();
       url.pathname = profile?.rol === "admin" ? "/admin" : "/dashboard";
       return NextResponse.redirect(url);
