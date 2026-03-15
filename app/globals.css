@@ -213,11 +213,18 @@
   overflow-x: auto;
 }
 
+.wmde-markdown {
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+}
+
 .wmde-markdown pre,
-.wmde-markdown table {
+.wmde-markdown table,
+.wmde-markdown img,
+.wmde-markdown code {
   max-width: 100%;
   overflow-x: auto;
-  display: block;
 }
 
 @media (max-width: 768px) {
@@ -230,3 +237,4 @@
     width: 100% !important;
   }
 }
+
