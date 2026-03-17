@@ -145,8 +145,6 @@ export function PerfilForm({ profile }: { profile: Profile }) {
               id="fecha_nacimiento"
               type="date"
               disabled={profile.perfil_completo}
-              onKeyDown={(e) => e.preventDefault()}
-              inputMode="none"
               {...register("fecha_nacimiento")}
             />
             {edadCalculada !== null && (
