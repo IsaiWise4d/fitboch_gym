@@ -4,7 +4,7 @@ import { construirPromptRutina, type DatosRutina } from "@/lib/ai/prompts";
 import { NextResponse } from "next/server";
 import type { Json } from "@/types/database";
 
-export const maxDuration = 60; // Gemini puede tardar en responder
+export const maxDuration = 60;// Gemini puede tardar en responder
 
 export async function POST(request: Request) {
   try {
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const modelo = "gemini-2.5-flash";
+      const modelo = "gemini-3-flash-preview";
 
     const response = await ai.models.generateContent({
       model: modelo,
