@@ -121,8 +121,13 @@ Tu comunicación es:
 ### Equipamiento disponible
 ${equipamientoTexto}
 
+
 ### Lesiones o limitaciones físicas
 ${datos.lesiones || "Ninguna conocida"}
+
+### Notas adicionales IMPORTANTES
+**Toma estas notas como instrucciones prioritarias del usuario. Si aquí se especifican días concretos para entrenar, grupos musculares para ciertos días, preferencias de distribución semanal o cualquier otra indicación, DEBES seguirlas estrictamente y adaptar la rutina a estas preferencias.**
+${datos.notas_adicionales || "Ninguna"}
 
 ---
 
@@ -156,9 +161,10 @@ Con los datos anteriores, genera un plan completo estructurado de la siguiente f
   - 2-3 días → Full Body
   - 4 días → Upper/Lower o Torso-Pierna
   - 5-6 días → Push/Pull/Legs (PPL) o especialización
+- Si el usuario selecciona 5 días de entrenamiento, DEBES generar exactamente 5 días de rutina de gimnasio (con su tabla de ejercicios) y los otros 2 días pueden ser de descanso o cardio, pero NUNCA pongas cardio o descanso dentro de los 5 días de entrenamiento. Si el usuario especifica en las notas adicionales qué días quiere entrenar, respétalo estrictamente.
 - Para cada día de entrenamiento, genera una tabla con:
   **Ejercicio | Series | Reps | RIR/RPE | Tempo | Descanso (min)**
-- NO DUPLIQUES ejercicios solo para indicar fases distintas en la tabla de un mimo día (ej. no pongas "Fase 1: Sentadilla", "Fase 2: Sentadilla"). La tabla debe mostrar la rutina tipo a seguir durante el ciclo, y las progresiones se explican en la sección de "Progresión semanal".
+- NO DUPLIQUES ejercicios solo para indicar fases distintas en la tabla de un mismo día (ej. no pongas "Fase 1: Sentadilla", "Fase 2: Sentadilla"). La tabla debe mostrar la rutina tipo a seguir durante el ciclo, y las progresiones se explican en la sección de "Progresión semanal".
 - Varía el número de Series y el RIR/RPE de forma inteligente según el ejercicio (compuesto vs aislado), la fase y el nivel. Evita poner sistemáticamente "3 series" o "RIR 3-4" en toda la tabla; adapta el volumen e intensidad a nivel de ejercicio (ej. 4 series para compuestos, 2 para aislados, RIR 1-2, etc.).
 - Asigna tiempos de descanso largos y exprésalos estrictamente en minutos, entre 2 y 3 minutos (ej. "2", "2.5", "3") para permitir una recuperación completa y un mayor rendimiento.
 - Para los días que no hay entrenamiento, simplemente indica que es descanso:
@@ -216,7 +222,8 @@ ${incluirNutricional ? `7. **Plan nutricional** — Calorías, macros, timing, s
 - Generar planes genéricos sin considerar los datos específicos del usuario
 - Incluir ejercicios contraindicados con las lesiones declaradas
 - Recomendar "agarre neutro" para jalones o dominadas (no hay ese implemento en el gimnasio)
-- Entregar menos días de entrenamiento de los indicados. Si el usuario escoge 5 días en sus datos, GENERA EXACTAMENTE 5 DÍAS DE GIMNASIO (con su tabla) y 2 de descanso, independientemente de la división sugerida.
+- Entregar menos días de entrenamiento de los indicados. Si el usuario escoge 5 días en sus datos, GENERA EXACTAMENTE 5 DÍAS DE GIMNASIO (con su tabla) y 2 de descanso, independientemente de la división sugerida. NUNCA pongas cardio o descanso dentro de los días de entrenamiento seleccionados, esos días deben ser de rutina de gimnasio sí o sí.
+- Ignorar las preferencias o instrucciones escritas en las notas adicionales. Si el usuario especifica días concretos para entrenar o grupos musculares para ciertos días, DEBES seguirlo estrictamente.
 - Superar los días o tiempo de sesión disponibles
 - Omitir calentamiento, deloads o protocolo de recuperación
 - Recomendar déficit calórico mayor a 500 kcal/día o superávit mayor a 350 kcal/día
@@ -235,10 +242,11 @@ ${incluirNutricional ? `7. **Plan nutricional** — Calorías, macros, timing, s
 
 Antes de generar el plan, sigue este orden de pensamiento:
 
-1. Analiza el perfil del usuario: nivel, disponibilidad, limitaciones y objetivo principal
-2. Determina la división muscular más eficiente para sus días y objetivo
+1. Analiza el perfil del usuario: nivel, disponibilidad, limitaciones, objetivo principal y especialmente las notas adicionales (si el usuario especifica días concretos para entrenar o grupos musculares para ciertos días, esto es prioritario y debe cumplirse).
+2. Determina la división muscular más eficiente para sus días y objetivo, respetando siempre las preferencias de días y grupos musculares indicadas en las notas adicionales.
 3. Selecciona los ejercicios de mayor ROI de estímulo para su equipamiento disponible
 4. Calcula el volumen semanal por grupo muscular (series efectivas) según evidencia actual
 5. Diseña la progresión semanal de carga/volumen para toda la duración del plan
-${incluirNutricional ? '6. Calcula el TDEE y ajusta las calorías al objetivo\n7. Verifica que el plan sea coherente, sostenible y libre de contradicciones\n8. Formatea la respuesta exactamente como se indica en la Sección 05' : '6. Verifica que el plan sea coherente, sostenible y libre de contradicciones\n7. Formatea la respuesta exactamente como se indica en la Sección 05'}`;
+${incluirNutricional ? '6. Calcula el TDEE y ajusta las calorías al objetivo\n7. Verifica que el plan sea coherente, sostenible y libre de contradicciones\n8. Formatea la respuesta exactamente como se indica en la Sección 05' : '6. Verifica que el plan sea coherente, sostenible y libre de contradicciones\n7. Formatea la respuesta exactamente como se indica en la Sección 05'}
+`;
 }
