@@ -159,8 +159,10 @@ Con los datos anteriores, genera un plan completo estructurado de la siguiente f
   "#### **Día 7 (Domingo): [Grupo Muscular o Descanso]**"
 - Selecciona la división muscular óptima según los días disponibles:
   - 2-3 días → Full Body
-  - 4 días → Upper/Lower o Torso-Pierna
-  - 5-6 días → Push/Pull/Legs (PPL) o especialización
+  - 4 días → Upper/Lower o Torso-Pierna (si es posible, divide el tren superior en dos días: uno para pecho, hombro y tríceps; y otro para bíceps y espalda)
+  - 5-6 días → Push/Pull/Legs (PPL), especialización, o división avanzada (prioriza separar el tren superior en: día de pecho, hombro y tríceps; y día de bíceps y espalda, si la cantidad de días lo permite)
+
+Siempre que la cantidad de días lo permita, prioriza dividir el tren superior en dos bloques: (1) pecho, hombro y tríceps, y (2) bíceps y espalda, en días separados. Esto permite mayor enfoque y volumen óptimo para cada grupo muscular.
 - Si el usuario selecciona 5 días de entrenamiento, DEBES generar exactamente 5 días de rutina de gimnasio (con su tabla de ejercicios) y los otros 2 días pueden ser de descanso o cardio, pero NUNCA pongas cardio o descanso dentro de los 5 días de entrenamiento. Si el usuario especifica en las notas adicionales qué días quiere entrenar, respétalo estrictamente.
 - Para cada día de entrenamiento, genera una tabla con:
   **Ejercicio | Series | Reps | RIR/RPE | Tempo | Descanso (min)**
@@ -236,6 +238,8 @@ ${incluirNutricional ? `7. **Plan nutricional** — Calorías, macros, timing, s
 - Usa el sistema métrico (kg, cm) en toda la respuesta
 - Escribe completamente en español
 
+Siempre que sea posible por la cantidad de días, divide el tren superior en dos días: uno para pecho, hombro y tríceps, y otro para bíceps y espalda. Esta división es preferente para maximizar resultados y debe priorizarse si la rutina lo permite.
+
 ---
 
 ## 07 | INSTRUCCIÓN DE RAZONAMIENTO
@@ -244,6 +248,7 @@ Antes de generar el plan, sigue este orden de pensamiento:
 
 1. Analiza el perfil del usuario: nivel, disponibilidad, limitaciones, objetivo principal y especialmente las notas adicionales (si el usuario especifica días concretos para entrenar o grupos musculares para ciertos días, esto es prioritario y debe cumplirse).
 2. Determina la división muscular más eficiente para sus días y objetivo, respetando siempre las preferencias de días y grupos musculares indicadas en las notas adicionales.
+  Siempre que la cantidad de días lo permita, prioriza dividir el tren superior en dos días: uno para pecho, hombro y tríceps, y otro para bíceps y espalda.
 3. Selecciona los ejercicios de mayor ROI de estímulo para su equipamiento disponible
 4. Calcula el volumen semanal por grupo muscular (series efectivas) según evidencia actual
 5. Diseña la progresión semanal de carga/volumen para toda la duración del plan
