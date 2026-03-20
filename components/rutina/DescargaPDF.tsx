@@ -2,20 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 import type { Rutina } from "@/types/app";
+import { parsearDiasRutina } from "@/lib/utils/parsear-rutina";
 
 interface DescargaPDFProps {
   rutina: Rutina;
 }
-
-// Colores de la app
-const PRIMARY = [255, 69, 0] as const;
-const BG_DARK = [10, 10, 10] as const;
-const SURFACE = [26, 26, 26] as const;
-const TEXT_WHITE = [255, 255, 255] as const;
-const TEXT_MUTED = [160, 160, 160] as const;
-const BORDER = [50, 50, 50] as const;
 
 export function DescargaPDF({ rutina }: DescargaPDFProps) {
   const [loading, setLoading] = useState(false);
@@ -27,237 +20,212 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
       const doc = new jsPDF("p", "mm", "a4");
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
-      const margin = 15;
+      const margin = 12;
       const contentW = pageW - margin * 2;
       let y = 0;
 
+      // Colores Premium FitBoch (Brand Yellow)
+      const PRIMARY = [249, 198, 51] as const; 
+      const BG_DARK = [14, 14, 14] as const;
+      const CARD_BG = [22, 22, 22] as const;
+      const TEXT_PRIMARY = [255, 255, 255] as const;
+      const TEXT_SECONDARY = [180, 180, 180] as const;
+      const BORDER_COLOR = [45, 45, 45] as const;
+
       function drawBackground() {
         doc.setFillColor(...BG_DARK);
-        doc.setDrawColor(...BG_DARK);
         doc.rect(0, 0, pageW, pageH, "F");
       }
 
-      function drawWatermark() {
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(72);
-        doc.setFont("helvetica", "bold");
-        doc.saveGraphicsState();
-        doc.setGState(doc.GState({ opacity: 0.03 }));
-        // Marca de agua diagonal repetida
-        for (let wy = 40; wy < pageH; wy += 80) {
-          for (let wx = -20; wx < pageW; wx += 120) {
-            doc.text("FITBOCH", wx, wy, { angle: 35 });
-          }
-        }
-        doc.restoreGraphicsState();
-      }
-
       function drawFooter(pageNum: number) {
-        const footerY = pageH - 8;
-        // Línea separadora
-        doc.setDrawColor(...BORDER);
-        doc.setLineWidth(0.3);
-        doc.line(margin, footerY - 4, pageW - margin, footerY - 4);
-        // Texto footer
-        doc.setFontSize(7);
-        doc.setTextColor(...TEXT_MUTED);
-        doc.setFont("helvetica", "normal");
-        doc.text("FitBoch - Tu rutina personalizada", margin, footerY);
-        doc.text(`Pág. ${pageNum}`, pageW - margin, footerY, { align: "right" });
+        doc.setFontSize(8);
+        doc.setTextColor(...TEXT_SECONDARY);
+        doc.text(`FitBoch - Tu Plan de Entrenamiento · Pág. ${pageNum}`, pageW / 2, pageH - 8, { align: "center" });
       }
 
-      function newPage(pageNum: number) {
-        if (pageNum > 1) doc.addPage();
-        drawBackground();
-        drawWatermark();
-        drawFooter(pageNum);
-        return margin + 5;
-      }
-
-      function checkNewPage(currentY: number, needed: number, pageCount: { n: number }): number {
-        if (currentY + needed > pageH - 18) {
+      function checkNewPage(needed: number, pageCount: { n: number }) {
+        if (y + needed > pageH - 15) {
+          doc.addPage();
           pageCount.n++;
-          return newPage(pageCount.n);
+          drawBackground();
+          drawFooter(pageCount.n);
+          y = margin + 5;
+          return true;
         }
-        return currentY;
+        return false;
       }
 
-      // ============ PÁGINA 1 ============
       const pageCount = { n: 1 };
-      y = newPage(1);
+      drawBackground();
+      drawFooter(1);
+      y = margin + 5;
 
-      // Header con barra naranja
+      // Header
       doc.setFillColor(...PRIMARY);
-      doc.roundedRect(margin, y, contentW, 28, 3, 3, "F");
-
-      // Logo text
-      doc.setTextColor(...TEXT_WHITE);
-      doc.setFontSize(24);
+      doc.roundedRect(margin, y, contentW, 25, 2, 2, "F");
+      
+      doc.setTextColor(0, 0, 0); // Texto negro sobre dorado
       doc.setFont("helvetica", "bold");
-      doc.text("FITBOCH", margin + 8, y + 12);
-
-      // Subtítulo
+      doc.setFontSize(22);
+      doc.text("FITBOCH", margin + 8, y + 13);
+      
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text("Rutina Personalizada", margin + 8, y + 20);
+      doc.text("TU EVOLUCIÓN EMPIEZA AQUÍ", margin + 8, y + 20);
 
-      // Fecha a la derecha
-      doc.setFontSize(8);
       const fechaStr = new Date(rutina.created_at).toLocaleDateString("es-ES", {
         day: "numeric",
-        month: "long",
-        year: "numeric",
+        month: "short",
+        year: "numeric"
       });
-      doc.text(fechaStr, pageW - margin - 8, y + 20, { align: "right" });
+      doc.setFontSize(8);
+      doc.text(fechaStr.toUpperCase(), pageW - margin - 8, y + 10, { align: "right" });
 
-      y += 36;
+      y += 35;
 
-      // Info box
-      doc.setFillColor(...SURFACE);
-      doc.roundedRect(margin, y, contentW, 14, 2, 2, "F");
-      doc.setDrawColor(...BORDER);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(margin, y, contentW, 14, 2, 2, "S");
-
-      const durLabel: Record<string, string> = {
-        "3_meses": "3 Meses",
-        "6_meses": "6 Meses",
-        "12_meses": "12 Meses",
-      };
-
-      doc.setFontSize(9);
-      doc.setTextColor(...PRIMARY);
-      doc.setFont("helvetica", "bold");
-      doc.text("Plan:", margin + 6, y + 9);
-      doc.setTextColor(...TEXT_WHITE);
-      doc.setFont("helvetica", "normal");
-      doc.text(durLabel[rutina.duracion_plan] || rutina.duracion_plan, margin + 20, y + 9);
-
-      y += 22;
-
-      // ============ CONTENIDO DE LA RUTINA ============
-      const lines = rutina.texto_rutina.split("\n");
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) {
-          y += 3;
-          continue;
-        }
-
-        // Heading ### (h3)
-        if (trimmed.startsWith("### ")) {
-          y = checkNewPage(y, 12, pageCount);
-          doc.setFontSize(11);
-          doc.setTextColor(...PRIMARY);
-          doc.setFont("helvetica", "bold");
-          const h3Text = trimmed.replace(/^###\s*/, "").replace(/\*\*/g, "");
-          const h3Lines = doc.splitTextToSize(h3Text, contentW - 4);
-          doc.text(h3Lines, margin + 2, y);
-          y += h3Lines.length * 5 + 3;
-          continue;
-        }
-
-        // Heading ## (h2) - secciones principales
-        if (trimmed.startsWith("## ")) {
-          y = checkNewPage(y, 18, pageCount);
-          y += 4;
-          // Barra decorativa
-          doc.setFillColor(...PRIMARY);
-          doc.rect(margin, y, 3, 8, "F");
-          // Fondo del título
-          doc.setFillColor(255, 69, 0, 0.08);
-          doc.setFillColor(30, 15, 10);
-          doc.roundedRect(margin + 5, y - 1, contentW - 5, 10, 2, 2, "F");
-
-          doc.setFontSize(13);
-          doc.setTextColor(...TEXT_WHITE);
-          doc.setFont("helvetica", "bold");
-          const h2Text = trimmed.replace(/^##\s*/, "").replace(/\*\*/g, "");
-          doc.text(h2Text, margin + 9, y + 6);
-          y += 15;
-          continue;
-        }
-
-        // Heading # (h1)
-        if (trimmed.startsWith("# ")) {
-          y = checkNewPage(y, 16, pageCount);
-          doc.setFontSize(16);
-          doc.setTextColor(...TEXT_WHITE);
-          doc.setFont("helvetica", "bold");
-          const h1Text = trimmed.replace(/^#\s*/, "").replace(/\*\*/g, "");
-          doc.text(h1Text, margin, y);
-          // Línea debajo
-          y += 7;
-          doc.setDrawColor(...PRIMARY);
-          doc.setLineWidth(0.6);
-          doc.line(margin, y, margin + contentW * 0.4, y);
-          y += 6;
-          continue;
-        }
-
-        // Separador ---
-        if (/^[-]{3,}$/.test(trimmed)) {
-          y = checkNewPage(y, 8, pageCount);
-          y += 2;
-          doc.setDrawColor(...BORDER);
-          doc.setLineWidth(0.2);
-          doc.line(margin + 10, y, pageW - margin - 10, y);
-          y += 5;
-          continue;
-        }
-
-        // Bullet list items
-        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-          y = checkNewPage(y, 8, pageCount);
-          const bulletText = trimmed.replace(/^[-*]\s*/, "");
-          const cleanText = bulletText.replace(/\*\*/g, "");
-
-          // Bullet point naranja
-          doc.setFillColor(...PRIMARY);
-          doc.circle(margin + 4, y - 1.2, 1, "F");
-
-          doc.setFontSize(9);
-          doc.setTextColor(...TEXT_WHITE);
-          doc.setFont("helvetica", "normal");
-
-          // Detectar texto en negrita y renderizarlo
-          const parts = bulletText.split(/\*\*(.*?)\*\*/g);
-          const wrappedLines = doc.splitTextToSize(cleanText, contentW - 12);
-
-          if (wrappedLines.length === 1) {
-            let xOff = margin + 9;
-            for (let i = 0; i < parts.length; i++) {
-              if (!parts[i]) continue;
-              doc.setFont("helvetica", i % 2 === 1 ? "bold" : "normal");
-              doc.text(parts[i], xOff, y);
-              xOff += doc.getTextWidth(parts[i]);
-            }
-          } else {
-            doc.text(wrappedLines, margin + 9, y);
-          }
-          y += wrappedLines.length * 4.5 + 1.5;
-          continue;
-        }
-
-        // Texto normal (párrafo)
-        y = checkNewPage(y, 8, pageCount);
-        const cleanParagraph = trimmed.replace(/\*\*/g, "");
-        doc.setFontSize(9);
-        doc.setTextColor(...TEXT_WHITE);
+      // Helper function to draw tabular data
+      function drawTable(tableData: string[][]) {
+        if (tableData.length === 0) return;
+        const headers = tableData[0].map(h => h.replace(/\*\*/g, "").replace(/\*/g, "").trim());
+        const body = tableData.slice(1);
+        
+        const colWidth = contentW / headers.length;
+        
+        checkNewPage(12, pageCount);
+        // Header Tabla
+        doc.setFillColor(35, 35, 35);
+        doc.rect(margin, y, contentW, 8, "F");
+        doc.setFontSize(7.5);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...PRIMARY);
+        
+        headers.forEach((h, i) => {
+          const wrappedH = doc.splitTextToSize(h.toUpperCase(), colWidth - 2);
+          doc.text(wrappedH, margin + i * colWidth + 2, y + 5);
+        });
+        
+        y += 8;
+        
+        // Body Tabla
         doc.setFont("helvetica", "normal");
-        const pLines = doc.splitTextToSize(cleanParagraph, contentW);
-
-        for (const pLine of pLines) {
-          y = checkNewPage(y, 5, pageCount);
-          doc.text(pLine, margin, y);
-          y += 4.5;
-        }
-        y += 1;
+        doc.setFontSize(8);
+        doc.setTextColor(...TEXT_PRIMARY);
+        
+        body.forEach((row) => {
+          // Pre-calculate heights
+          const wrappedCells = row.map(cell => {
+             const cleanCell = cell.replace(/\*\*/g, "").replace(/\*/g, "").trim();
+             return doc.splitTextToSize(cleanCell, colWidth - 4);
+          });
+          
+          const maxLines = Math.max(1, ...wrappedCells.map(lines => lines.length));
+          const rowHeight = (maxLines * 4.5) + 3; // base padding + text height
+          
+          checkNewPage(rowHeight + 4, pageCount);
+          
+          // Render each column text for this row
+          wrappedCells.forEach((lines, i) => {
+            doc.text(lines, margin + i * colWidth + 2, y + 4.5);
+          });
+          
+          y += rowHeight;
+          
+          // Draw bottom separator
+          doc.setDrawColor(...BORDER_COLOR);
+          doc.setLineWidth(0.1);
+          doc.line(margin, y, margin + contentW, y);
+        });
+        y += 6;
       }
 
-      // Guardar
-      doc.save(`FitBoch_Rutina_${new Date().toISOString().split("T")[0]}.pdf`);
+      // Intro / Resumen
+      const dias = parsearDiasRutina(rutina.texto_rutina);
+      const intro = rutina.texto_rutina.split("##")[0].trim();
+      
+      if (intro) {
+        doc.setTextColor(...TEXT_PRIMARY);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("RESUMEN DEL PLAN", margin, y);
+        y += 5;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(...TEXT_SECONDARY);
+        
+        const cleanIntro = intro.replace(/#/g, "").replace(/\*\*/g, "").replace(/\*/g, "").trim();
+        const introLines = doc.splitTextToSize(cleanIntro, contentW);
+        doc.text(introLines, margin, y);
+        y += introLines.length * 5 + 10;
+      }
+
+      // Procesar Secciones (Fases, etc.)
+      const allSections = rutina.texto_rutina.split("##").slice(1);
+      
+      allSections.forEach(section => {
+        const lines = section.trim().split("\n");
+        const title = lines[0].replace(/#/g, "").replace(/\*/g, "").trim();
+        
+        checkNewPage(25, pageCount);
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(...PRIMARY);
+        doc.text(title.toUpperCase(), margin, y);
+        y += 7;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(...TEXT_SECONDARY);
+        
+        const rowsForTable: string[][] = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) {
+             y += 2;
+             continue;
+          }
+          
+          if (line.includes("|") && line.startsWith("|")) {
+             if (line.includes("---")) continue; // markdown table separator
+             const cols = line.split("|").filter(c => c.trim() !== "").map(c => c.trim());
+             rowsForTable.push(cols);
+          } else {
+             // Si estabamos acumulando una tabla, dibujarla primero
+             if (rowsForTable.length > 0) {
+               drawTable(rowsForTable);
+               rowsForTable.length = 0;
+               doc.setFont("helvetica", "normal");
+               doc.setFontSize(9);
+             }
+             
+             doc.setTextColor(...TEXT_SECONDARY);
+             
+             let cleanLine = line;
+             if (cleanLine.startsWith("- ")) {
+               cleanLine = "• " + cleanLine.substring(2);
+             } else if (cleanLine.startsWith("* ")) {
+               cleanLine = "• " + cleanLine.substring(2);
+             }
+             cleanLine = cleanLine.replace(/#/g, "").replace(/\*\*/g, "").replace(/\*/g, "");
+             
+             const wrappedContent = doc.splitTextToSize(cleanLine, contentW);
+             checkNewPage(wrappedContent.length * 5 + 2, pageCount);
+             doc.text(wrappedContent, margin, y);
+             y += wrappedContent.length * 5 + 2;
+          }
+        }
+        
+        // Si la sección termina con una tabla
+        if (rowsForTable.length > 0) {
+           drawTable(rowsForTable);
+        }
+        
+        y += 5;
+      });
+
+      doc.save(`Rutina_FitBoch_${rutina.id.substring(0, 8)}.pdf`);
     } catch (err) {
       console.error("Error generando PDF:", err);
     } finally {
@@ -276,9 +244,9 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
       {loading ? (
         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
       ) : (
-        <Download className="h-4 w-4 mr-2" />
+        <FileText className="h-4 w-4 mr-2" />
       )}
-      {loading ? "Generando PDF..." : "Descargar PDF"}
+      {loading ? "Generando PDF..." : "Exportar PDF Premium"}
     </Button>
   );
 }

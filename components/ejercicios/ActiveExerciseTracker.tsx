@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Save, X, Dumbbell, Timer, Search, Filter, ChevronDown, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Save, X, Dumbbell, Timer, AlertTriangle } from "lucide-react";
 import type { Ejercicio } from "@/types/app";
 
 interface Serie {
@@ -32,10 +32,7 @@ export function ActiveExerciseTracker() {
   const [isSaving, setIsSaving] = useState(false);
   
   // States for Dropdown
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // States for Modals
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
@@ -70,16 +67,6 @@ export function ActiveExerciseTracker() {
       localStorage.removeItem("fitboch_active_workout");
     }
   }, [state, isOpen]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const addSerie = () => {
     setState((s) => ({
@@ -140,30 +127,21 @@ export function ActiveExerciseTracker() {
         ...state,
         series: [{ peso: state.series[state.series.length - 1]?.peso || 0, reps: 0 }]
       });
-      alert("Ejercicio guardado correctamente.");
+      
       window.dispatchEvent(new Event('exercise-saved'));
 
     } catch (error) {
       console.error("Error saving exercise:", error);
-      alert("Hubo un error al guardar el ejercicio.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleSaveClick = () => {
-    if (!state.ejercicio_id) {
-      alert("Por favor selecciona un ejercicio.");
-      return;
-    }
-    if (state.series.length === 0) {
-      alert("Debes agregar al menos una serie.");
-      return;
-    }
-    if (state.series.some(s => s.reps <= 0)) {
-      alert("Asegúrate de registrar al menos 1 repetición en cada serie.");
-      return;
-    }
+    if (!state.ejercicio_id) return;
+    if (state.series.length === 0) return;
+    if (state.series.some(s => s.reps <= 0)) return;
+    
     setShowSaveConfirm(true);
   };
 
@@ -176,9 +154,8 @@ export function ActiveExerciseTracker() {
   const categories = Array.from(new Set(ejercicios.map(e => e.grupo_muscular))).filter(Boolean);
   
   const filteredEjercicios = ejercicios.filter(e => {
-    const matchesSearch = e.nombre.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory ? e.grupo_muscular === selectedCategory : true;
-    return matchesSearch && matchesCategory;
+    return matchesCategory;
   });
 
   const selectedEjercicioObj = ejercicios.find(e => e.id === state.ejercicio_id);
@@ -187,7 +164,7 @@ export function ActiveExerciseTracker() {
     return (
       <Button 
         onClick={() => setIsOpen(true)}
-        className="w-full flex items-center justify-center gap-2 mt-4"
+        className="w-full flex items-center justify-center gap-2 mt-4 inline-flex h-10 px-4 py-2"
         variant="outline"
       >
         <Plus className="h-4 w-4" />
@@ -196,6 +173,8 @@ export function ActiveExerciseTracker() {
     );
   }
 
+  const isFormValid = state.ejercicio_id && state.series.length > 0 && !state.series.some(s => s.reps <= 0);
+
   return (
     <div className="mt-6 border border-primary/20 bg-primary/5 rounded-xl p-4 shadow-sm relative space-y-4">
       {/* Modals */}
@@ -203,14 +182,14 @@ export function ActiveExerciseTracker() {
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-surface border border-border rounded-xl p-5 max-w-sm w-full shadow-lg space-y-4">
             <h3 className="font-bold text-lg flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" /> Terminar Ejercicio
+              <AlertTriangle className="h-5 w-5" /> Cancelar Ejercicio
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Al terminar, se borrarán todos los datos no guardados del ejercicio actual y se cerrará el panel activo. ¿Estás seguro que deseas continuar?
+              ¿Seguro que deseas cancelar? Se borrarán las series que estabas anotando.
             </p>
             <div className="flex gap-3 justify-end pt-2">
-              <Button variant="outline" onClick={() => setShowFinishConfirm(false)}>Cancelar</Button>
-              <Button variant="destructive" onClick={executeFinish}>Sí, terminar</Button>
+              <Button variant="outline" onClick={() => setShowFinishConfirm(false)}>No, seguir</Button>
+              <Button variant="destructive" onClick={executeFinish}>Sí, cancelar</Button>
             </div>
           </div>
         </div>
@@ -223,11 +202,11 @@ export function ActiveExerciseTracker() {
               <Save className="h-5 w-5" /> Guardar Ejercicio
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              ¿Estás seguro que deseas guardar este bloque de series? <strong className="text-foreground">Cuidado: No podrás editar este historial una vez guardado.</strong>
+              ¿Seguro que deseas guardar este bloque de series? Recuerda que una vez guardado no se podrá editar.
             </p>
             <div className="flex gap-3 justify-end pt-2">
-              <Button variant="outline" onClick={() => setShowSaveConfirm(false)}>Volver a editar</Button>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={executeSave}>Sí, guardar permanentemente</Button>
+              <Button variant="outline" onClick={() => setShowSaveConfirm(false)}>Cancelar</Button>
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={executeSave}>Sí, guardar</Button>
             </div>
           </div>
         </div>
@@ -244,73 +223,42 @@ export function ActiveExerciseTracker() {
       </div>
 
       <div className="space-y-3">
-        {/* Custom Dropdown */}
-        <div className="space-y-1 relative" ref={dropdownRef}>
-          <Label className="text-xs text-muted-foreground">Ejercicio</Label>
-          <div 
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex min-h-[40px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer"
-          >
-            <span className={selectedEjercicioObj ? "font-medium text-foreground" : "text-muted-foreground"}>
-              {selectedEjercicioObj ? selectedEjercicioObj.nombre : "Busca o selecciona un ejercicio..."}
-            </span>
-            <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
+        {/* Simple Selects */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Grupo Muscular</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setState((s) => ({ ...s, ejercicio_id: "" })); // Reset exercise when changing category
+              }}
+            >
+              <option value="">Todos</option>
+              {categories.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
 
-          {isDropdownOpen && (
-            <div className="absolute z-40 top-[60px] left-0 w-full bg-background border border-border rounded-md shadow-md p-2 space-y-2">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Buscar ejercicio..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-9"
-                    autoFocus
-                  />
-                </div>
-                {categories.length > 0 && (
-                  <select
-                    className="h-9 rounded-md border border-input bg-background px-2 text-xs"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                  >
-                    <option value="">Todos (Grupo)</option>
-                    {categories.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              
-              <ul className="max-h-52 overflow-y-auto space-y-1 mt-2">
-                {filteredEjercicios.length === 0 ? (
-                  <li className="text-center text-xs text-muted-foreground py-3">No hay resultados</li>
-                ) : (
-                  filteredEjercicios.map(e => (
-                    <li 
-                      key={e.id}
-                      onClick={() => {
-                        setState(s => ({ ...s, ejercicio_id: e.id }));
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`px-2 py-2 text-sm rounded-md cursor-pointer flex justify-between items-center ${
-                        state.ejercicio_id === e.id ? 'bg-primary border-primary text-primary-foreground' : 'hover:bg-surface-hover'
-                      }`}
-                    >
-                      <span>{e.nombre}</span>
-                      <span className="text-[10px] opacity-70 uppercase tracking-wider">{e.grupo_muscular}</span>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-          )}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Ejercicio</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+              value={state.ejercicio_id}
+              onChange={(e) => setState(s => ({ ...s, ejercicio_id: e.target.value }))}
+            >
+              <option value="">Selecciona...</option>
+              {filteredEjercicios.map(e => (
+                <option key={e.id} value={e.id}>{e.nombre}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Imagen del Ejercicio (GIF/Demonstration) */}
-        {selectedEjercicioObj?.imagen_url && !isDropdownOpen && (
+        {selectedEjercicioObj?.imagen_url && (
           <div className="w-full rounded-lg overflow-hidden border border-border/50 bg-black/5 mt-1">
             <img 
               src={selectedEjercicioObj.imagen_url} 
@@ -330,7 +278,8 @@ export function ActiveExerciseTracker() {
             type="number"
             step="0.5"
             min="0"
-            value={state.tiempo_descanso}
+            value={state.tiempo_descanso === 0 ? "" : state.tiempo_descanso}
+            placeholder="0"
             onChange={(e) => setState(s => ({ ...s, tiempo_descanso: parseFloat(e.target.value) || 0 }))}
           />
         </div>
@@ -353,7 +302,7 @@ export function ActiveExerciseTracker() {
                     min="0" 
                     max="200" 
                     step="0.5" 
-                    value={serie.peso || ""} 
+                    value={serie.peso === 0 ? "" : serie.peso} 
                     onChange={(e) => updateSerie(idx, "peso", parseFloat(e.target.value) || 0)}
                     className="h-8"
                   />
@@ -363,8 +312,8 @@ export function ActiveExerciseTracker() {
                   <Input 
                     type="number" 
                     placeholder="0" 
-                    min="0" 
-                    value={serie.reps || ""} 
+                    min="1" 
+                    value={serie.reps === 0 ? "" : serie.reps} 
                     onChange={(e) => updateSerie(idx, "reps", parseInt(e.target.value) || 0)}
                     className="h-8"
                   />
@@ -386,9 +335,14 @@ export function ActiveExerciseTracker() {
         {/* Acciones Finales */}
         <div className="pt-4 grid grid-cols-2 gap-3">
           <Button variant="destructive" className="w-full bg-destructive/10 text-destructive hover:bg-destructive border border-destructive hover:text-white" onClick={() => setShowFinishConfirm(true)}>
-            Terminar
+            Cancelar
           </Button>
-          <Button variant="default" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleSaveClick} disabled={isSaving}>
+          <Button 
+            variant="default" 
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90" 
+            onClick={handleSaveClick} 
+            disabled={isSaving || !isFormValid}
+          >
             <Save className="h-4 w-4 mr-2" /> 
             {isSaving ? "Guardando..." : "Guardar"}
           </Button>
