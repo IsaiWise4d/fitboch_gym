@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { ExerciseHistoryLog } from "@/components/ejercicios/ExerciseHistoryLog";
 
 export default async function EjercicioDetallePage({
   params,
@@ -105,6 +106,9 @@ export default async function EjercicioDetallePage({
           </div>
         </div>
       )}
+
+      {/* Historial Específico del Ejercicio */}
+      <ExerciseHistoryLog ejercicioId={id} />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { MembresiaCard } from "@/components/dashboard/MembresiaCard";
 import { RutinaDiaria } from "@/components/dashboard/RutinaDiaria";
 import { Bell } from "lucide-react";
 import Link from "next/link";
+import { ActiveExerciseTracker } from "@/components/ejercicios/ActiveExerciseTracker";
+import { RecentExercisesList } from "@/components/ejercicios/RecentExercisesList";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -79,6 +81,12 @@ export default async function DashboardPage() {
       {rutina?.texto_rutina && membresia && (
         <RutinaDiaria textoRutina={rutina.texto_rutina} />
       )}
+
+      {/* Ejercicio Activo */}
+      <ActiveExerciseTracker />
+
+      {/* Historial Reciente */}
+      <RecentExercisesList />
     </div>
   );
 }

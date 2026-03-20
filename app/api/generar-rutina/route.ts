@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-      const modelo = "gemini-3.1-flash-lite-preview";
+      const modelo = "gemini-3.1-flash-preview";
 
     const response = await ai.models.generateContent({
       model: modelo,

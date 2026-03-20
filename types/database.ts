@@ -244,6 +244,83 @@ export interface Database {
           },
         ];
       };
+      historial_ejercicios: {
+        Row: {
+          id: string;
+          user_id: string;
+          ejercicio_id: string;
+          tiempo_descanso_minutos: number;
+          fecha_completado: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          ejercicio_id: string;
+          tiempo_descanso_minutos: number;
+          fecha_completado?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          ejercicio_id?: string;
+          tiempo_descanso_minutos?: number;
+          fecha_completado?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "historial_ejercicios_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "historial_ejercicios_ejercicio_id_fkey";
+            columns: ["ejercicio_id"];
+            isOneToOne: false;
+            referencedRelation: "ejercicios";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      series_ejercicios: {
+        Row: {
+          id: string;
+          historial_origen_id: string;
+          serie_numero: number;
+          peso_kg: number;
+          repeticiones: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          historial_origen_id: string;
+          serie_numero: number;
+          peso_kg: number;
+          repeticiones: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          historial_origen_id?: string;
+          serie_numero?: number;
+          peso_kg?: number;
+          repeticiones?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "series_ejercicios_historial_origen_id_fkey";
+            columns: ["historial_origen_id"];
+            isOneToOne: false;
+            referencedRelation: "historial_ejercicios";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {};
     Functions: {};
