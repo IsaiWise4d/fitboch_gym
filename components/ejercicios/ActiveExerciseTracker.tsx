@@ -332,8 +332,18 @@ export function ActiveExerciseTracker() {
           </Button>
         </div>
 
+        {/* Texto descriptivo de ayuda */}
+        <div className="pt-2">
+          <div className="text-[11px] text-muted-foreground bg-primary/5 border border-primary/10 rounded-lg p-2.5 flex items-start gap-2.5">
+            <AlertTriangle className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+            <p className="leading-normal">
+              Dale a <span className="font-bold text-primary">Guardar</span> únicamente cuando hayas terminado todas tus series de este ejercicio.
+            </p>
+          </div>
+        </div>
+
         {/* Acciones Finales */}
-        <div className="pt-4 grid grid-cols-2 gap-3">
+        <div className="pt-2 grid grid-cols-2 gap-3">
           <Button variant="destructive" className="w-full bg-destructive/10 text-destructive hover:bg-destructive border border-destructive hover:text-white" onClick={() => setShowFinishConfirm(true)}>
             Cancelar
           </Button>

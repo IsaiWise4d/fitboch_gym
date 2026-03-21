@@ -15,7 +15,7 @@ export default async function UsuarioDetallePage({ params }: Props) {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: membresias }, { data: rutinas }] =
+  const [{ data: profile }, { data: membresias }, { data: rutinas }, { data: planes }] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", id).single(),
       supabase
@@ -28,6 +28,11 @@ export default async function UsuarioDetallePage({ params }: Props) {
         .select("id, created_at, duracion_plan, estado, modelo_ia, texto_rutina")
         .eq("usuario_id", id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("planes_nutricionales")
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false }),
     ]);
 
   if (!profile) notFound();
@@ -37,6 +42,7 @@ export default async function UsuarioDetallePage({ params }: Props) {
       profile={profile}
       membresias={membresias ?? []}
       rutinas={rutinas ?? []}
+      planesNutricionales={planes ?? []}
     />
   );
 }

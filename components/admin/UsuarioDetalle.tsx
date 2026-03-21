@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { format, parseISO, addMonths, addDays, isBefore, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
-import type { Profile, Membresia } from "@/types/app";
+import type { Profile, Membresia, PlanNutricional } from "@/types/app";
 
 const RutinaEditor = dynamic(() => import("@/components/admin/RutinaEditor"), {
   ssr: false,
@@ -46,6 +46,7 @@ interface Props {
   profile: Profile;
   membresias: Membresia[];
   rutinas: RutinaResumen[];
+  planesNutricionales: PlanNutricional[];
 }
 
 const PLAN_MESES: Record<string, number> = {
@@ -55,7 +56,7 @@ const PLAN_MESES: Record<string, number> = {
   anual: 12,
 };
 
-export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
+export function UsuarioDetalle({ profile, membresias, rutinas, planesNutricionales }: Props) {
   const router = useRouter();
   const [showRenovar, setShowRenovar] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
 
   const membresiaActiva = membresias.find((m) => m.estado === "activa") ?? null;
   const rutinaActiva = rutinas.find((r) => r.estado === "activa") ?? null;
+  const planNutriActivo = planesNutricionales && planesNutricionales.length > 0 ? planesNutricionales[0] : null; // Asumimos el mas reciente es active
   const hoy = startOfDay(new Date());
   const membresiaVigente = membresiaActiva
     ? !isBefore(startOfDay(parseISO(membresiaActiva.fecha_fin)), hoy)
@@ -75,6 +77,12 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
   const [textoRutinaEdit, setTextoRutinaEdit] = useState(
     rutinaActiva?.texto_rutina || ""
   );
+  
+  const [editandoPlan, setEditandoPlan] = useState(false);
+  const [textoPlanEdit, setTextoPlanEdit] = useState(
+    planNutriActivo?.texto_plan || ""
+  );
+
   const [incluirNutricional, setIncluirNutricional] = useState(
     membresiaActiva?.plan_nutricional_habilitado ?? false
   );
@@ -83,6 +91,11 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
     setTextoRutinaEdit(rutinaActiva?.texto_rutina || "");
     setEditandoRutina(false);
   }, [rutinaActiva?.id, rutinaActiva?.texto_rutina]);
+
+  useEffect(() => {
+    setTextoPlanEdit(planNutriActivo?.texto_plan || "");
+    setEditandoPlan(false);
+  }, [planNutriActivo?.id, planNutriActivo?.texto_plan]);
 
   // Renovar membresía
   const [tipoPlan, setTipoPlan] = useState<string>("mensual");
@@ -210,6 +223,35 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
         setError(data.error || "Error al guardar la rutina");
       } else {
         setEditandoRutina(false);
+        router.refresh();
+      }
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleGuardarTextoPlanNutricional() {
+    if (!planNutriActivo) return;
+    setLoading("editar-plan");
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/editar-plan-nutricional", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan_id: planNutriActivo.id,
+          texto_plan: textoPlanEdit,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al guardar el plan nutricional");
+      } else {
+        setEditandoPlan(false);
         router.refresh();
       }
     } catch {
@@ -718,6 +760,96 @@ export function UsuarioDetalle({ profile, membresias, rutinas }: Props) {
               </div>
               {loading === "nutricional" && <Loader2 className="h-3 w-3 animate-spin ml-auto" />}
             </label>
+          </div>
+        )}
+      </div>
+
+      {/* Plan Nutricional */}
+      <div className="rounded-lg border border-border bg-surface p-4 space-y-3 mt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Plan Nutricional
+          </div>
+          {planNutriActivo && (
+            <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full">
+              Generado
+            </span>
+          )}
+        </div>
+
+        {planNutriActivo ? (
+          <div className="text-sm">
+            <p>
+              Objetivo: {planNutriActivo.objetivo} · Generado{" "}
+              {format(parseISO(planNutriActivo.created_at), "d MMM yyyy", {
+                locale: es,
+              })}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {membresiaActiva?.plan_nutricional_habilitado
+              ? "Esperando que el usuario genere su plan nutricional"
+              : "Plan nutricional no habilitado para este usuario"}
+          </p>
+        )}
+
+        {/* AVISO SOLO PC PARA EDITAR PLAN */}
+        {planNutriActivo && (
+          <div className="min-w-0 space-y-2 rounded-lg border border-border bg-white/5 p-3 mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium">Texto del plan nutricional activo</p>
+              {!editandoPlan ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto md:block hidden"
+                  onClick={() => setEditandoPlan(true)}
+                >
+                  Editar texto del plan
+                </Button>
+              ) : (
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => {
+                      setTextoPlanEdit(planNutriActivo.texto_plan);
+                      setEditandoPlan(false);
+                    }}
+                    disabled={loading === "editar-plan"}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    onClick={handleGuardarTextoPlanNutricional}
+                    disabled={loading === "editar-plan" || !textoPlanEdit.trim()}
+                  >
+                    {loading === "editar-plan" ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : null}
+                    Guardar Cambios
+                  </Button>
+                </div>
+              )}
+            </div>
+            {/* Solo mostrar editor en PC */}
+            <div className="mt-2 hidden md:block">
+              <RutinaEditor
+                markdown={textoPlanEdit}
+                onChange={(value) => setTextoPlanEdit(value)}
+                readOnly={!editandoPlan}
+              />
+            </div>
+            {/* Aviso en móvil */}
+            <div className="block md:hidden rounded-md border border-dashed border-warning bg-warning/10 p-3 text-warning text-center text-sm">
+              <AlertTriangle className="inline-block mr-2 align-text-bottom" />
+              La edición manual solo está disponible desde una computadora.
+            </div>
           </div>
         )}
       </div>

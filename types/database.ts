@@ -321,6 +321,47 @@ export interface Database {
           }
         ];
       };
+      planes_nutricionales: {
+        Row: {
+          id: string;
+          user_id: string;
+          texto_plan: string;
+          objetivo: string;
+          nivel_actividad: string | null;
+          horario_entrenamiento: string | null;
+          restricciones: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          texto_plan: string;
+          objetivo: string;
+          nivel_actividad?: string | null;
+          horario_entrenamiento?: string | null;
+          restricciones?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          texto_plan?: string;
+          objetivo?: string;
+          nivel_actividad?: string | null;
+          horario_entrenamiento?: string | null;
+          restricciones?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "planes_nutricionales_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {};
     Functions: {};

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { History, Dumbbell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { History, Dumbbell, Trash2 } from "lucide-react";
 import { EjercicioCard } from "./EjercicioCard";
 
 export function RecentExercisesList() {
@@ -37,6 +38,25 @@ export function RecentExercisesList() {
     setLoading(false);
   };
 
+  const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!exerciseToDelete) return;
+    
+    const { error } = await supabase
+      .from("historial_ejercicios")
+      .delete()
+      .eq("id", exerciseToDelete);
+      
+    if (error) {
+      console.error("Error al borrar", error);
+      alert("Error al borrar: " + error.message);
+    } else {
+      loadHistorial();
+    }
+    setExerciseToDelete(null);
+  };
+
   useEffect(() => {
     loadHistorial();
 
@@ -65,6 +85,24 @@ export function RecentExercisesList() {
 
   return (
     <div className="space-y-4">
+      {/* Modal de Confirmación de Borrado */}
+      {exerciseToDelete && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-xl p-5 max-w-sm w-full shadow-lg space-y-4">
+            <h3 className="font-bold text-lg flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" /> ¿Borrar del historial?
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              ¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 justify-end pt-2">
+              <Button variant="outline" onClick={() => setExerciseToDelete(null)}>Cancelar</Button>
+              <Button variant="destructive" onClick={handleDelete}>Sí, borrar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h3 className="font-semibold flex items-center gap-2">
         <History className="h-4 w-4" />
         Ejercicios Completados Recientemente
@@ -86,6 +124,13 @@ export function RecentExercisesList() {
                     {new Date(h.fecha_completado).toLocaleDateString()} • {h.tiempo_descanso_minutos} min descanso
                   </div>
                 </div>
+                <button 
+                  onClick={() => setExerciseToDelete(h.id)}
+                  className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                  title="Borrar ejercicio"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
               <div className="pt-2 border-t border-border mt-2 space-y-1">
                 {h.series_ejercicios?.sort((a: any, b: any) => a.serie_numero - b.serie_numero).map((s: any) => (
