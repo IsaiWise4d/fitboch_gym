@@ -15,10 +15,10 @@ export function createWatermarkDataURL(opts?: {
 }): string | null {
   const {
     text = "FITBOCH",
-    color = [249, 198, 51],
-    opacity = 0.08,
+    color = [255, 255, 255],
+    opacity = 0.04,
     angle = -35,
-    fontSize = 220,
+    fontSize = 180,
     canvasWidth = 1600,
     canvasHeight = 400,
   } = opts ?? {};
@@ -98,13 +98,13 @@ export function drawVectorWatermarkOnDoc(
   const {
     text = "FITBOCH",
     color = [255, 255, 255],
-    opacity = 0.03,
+    opacity = 0.02,
     angle = 35,
-    fontSize = 72,
-    stepX = 120,
-    stepY = 80,
-    startX = -20,
-    startY = 40,
+    fontSize = 60,
+    stepX = 160,
+    stepY = 120,
+    startX = -10,
+    startY = 30,
   } = opts ?? {};
 
   try {

@@ -54,7 +54,8 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
           drawBackground();
           drawFooter(pageCount.n);
           // redraw watermark on every new page using dieta color
-          drawWatermark(doc, pageW, pageH, { color: PRIMARY as any, opacity: 0.03, angle: 35 });
+          // Use a subtle white watermark instead of the brand yellow to avoid "super yellow" look
+          drawWatermark(doc, pageW, pageH, { color: [255, 255, 255], opacity: 0.02, angle: 35 });
           y = margin + 5;
           return true;
         }
@@ -64,8 +65,8 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
       const pageCount = { n: 1 };
       drawBackground();
       drawFooter(1);
-      // draw watermark on first page using dieta color so both PDFs match
-      drawWatermark(doc, pageW, pageH, { color: PRIMARY as any, opacity: 0.03, angle: 35 });
+      // draw watermark on first page using a subtle white color
+      drawWatermark(doc, pageW, pageH, { color: [255, 255, 255], opacity: 0.02, angle: 35 });
       y = margin + 5;
 
       // Header
@@ -91,13 +92,27 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
 
       y += 35;
 
-      // Helper function to draw tabular data
       function drawTable(tableData: string[][]) {
         if (tableData.length === 0) return;
         const headers = tableData[0].map(h => h.replace(/\*\*/g, "").replace(/\*/g, "").trim());
         const body = tableData.slice(1);
         
-        const colWidth = contentW / headers.length;
+        // Calcula pesos dinámicos para darle más espacio a columnas anchas
+        const weights = headers.map(h => {
+           const hUpper = h.toUpperCase();
+           if (hUpper.includes("EJERCICIO") || hUpper.includes("COMIDA") || hUpper.includes("INGREDIENTES")) return 3.5;
+           if (hUpper.includes("FUNCIONALIDAD") || hUpper.includes("NOTAS")) return 2.5;
+           if (hUpper.includes("OPCIÓN")) return 1.5;
+           return 1;
+        });
+        
+        const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+        const colWidths = weights.map(w => (w / totalWeight) * contentW);
+        const getColX = (index: number) => {
+          let x = margin;
+          for (let i = 0; i < index; i++) x += colWidths[i];
+          return x;
+        };
         
         checkNewPage(12, pageCount);
         // Header Tabla
@@ -108,8 +123,10 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
         doc.setTextColor(...PRIMARY);
         
         headers.forEach((h, i) => {
-          const wrappedH = doc.splitTextToSize(h.toUpperCase(), colWidth - 2);
-          doc.text(wrappedH, margin + i * colWidth + 2, y + 5);
+          const colW = colWidths[i];
+          const xPos = getColX(i);
+          const wrappedH = doc.splitTextToSize(h.toUpperCase(), colW - 2);
+          doc.text(wrappedH, xPos + 2, y + 5);
         });
         
         y += 8;
@@ -120,10 +137,13 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
         doc.setTextColor(...TEXT_PRIMARY);
         
         body.forEach((row) => {
-          // Pre-calculate heights
-          const wrappedCells = row.map(cell => {
+          // Asegurarse de que row tenga la misma longitud que headers
+          const paddedRow = [...row];
+          while (paddedRow.length < headers.length) paddedRow.push("");
+
+          const wrappedCells = paddedRow.map((cell, i) => {
              const cleanCell = cell.replace(/\*\*/g, "").replace(/\*/g, "").trim();
-             return doc.splitTextToSize(cleanCell, colWidth - 4);
+             return doc.splitTextToSize(cleanCell, colWidths[i] - 4);
           });
           
           const maxLines = Math.max(1, ...wrappedCells.map(lines => lines.length));
@@ -131,14 +151,13 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
           
           checkNewPage(rowHeight + 4, pageCount);
           
-          // Render each column text for this row
           wrappedCells.forEach((lines, i) => {
-            doc.text(lines, margin + i * colWidth + 2, y + 4.5);
+            const xPos = getColX(i);
+            doc.text(lines, xPos + 2, y + 4.5);
           });
           
           y += rowHeight;
           
-          // Draw bottom separator
           doc.setDrawColor(...BORDER_COLOR);
           doc.setLineWidth(0.1);
           doc.line(margin, y, margin + contentW, y);
