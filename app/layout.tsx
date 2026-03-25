@@ -10,6 +10,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "FitBoch - Gimnasio",
   description: "Sistema de gestión de membresías y rutinas personalizadas",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
