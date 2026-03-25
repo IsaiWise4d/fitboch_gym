@@ -36,6 +36,10 @@ export function DescargaPDFNutricion({ plan }: DescargaPDFProps) {
         doc.rect(0, 0, pageW, pageH, "F");
       }
 
+      // Load watermark helper (vector if supported, otherwise image fallback)
+      const watermarkMod = await import("@/lib/pdf/watermark");
+      const { drawWatermark } = watermarkMod;
+
       function drawFooter(pageNum: number) {
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_SECONDARY);
@@ -48,6 +52,8 @@ export function DescargaPDFNutricion({ plan }: DescargaPDFProps) {
           pageCount.n++;
           drawBackground();
           drawFooter(pageCount.n);
+          // Draw watermark on every new page (behind content)
+          drawWatermark(doc, pageW, pageH, { color: PRIMARY as any, opacity: 0.03, angle: 35 });
           y = margin + 5;
           return true;
         }
@@ -57,6 +63,8 @@ export function DescargaPDFNutricion({ plan }: DescargaPDFProps) {
       const pageCount = { n: 1 };
       drawBackground();
       drawFooter(1);
+      // Draw watermark behind content (attempt vector first, fallback to image)
+      drawWatermark(doc, pageW, pageH, { color: PRIMARY as any, opacity: 0.03, angle: 35 });
       y = margin + 5;
 
       // Header
@@ -120,7 +128,7 @@ export function DescargaPDFNutricion({ plan }: DescargaPDFProps) {
           const maxLines = Math.max(1, ...wrappedCells.map(lines => lines.length));
           const rowHeight = (maxLines * 4.5) + 3; // base padding + text height
           
-          checkNewPage(rowHeight + 4, pageCount);
+           checkNewPage(rowHeight + 4, pageCount);
           
           // Render each column text for this row
           wrappedCells.forEach((lines, i) => {
@@ -209,7 +217,7 @@ export function DescargaPDFNutricion({ plan }: DescargaPDFProps) {
              cleanLine = cleanLine.replace(/#/g, "").replace(/\*\*/g, "").replace(/\*/g, "");
              
              const wrappedContent = doc.splitTextToSize(cleanLine, contentW);
-             checkNewPage(wrappedContent.length * 5 + 2, pageCount);
+               checkNewPage(wrappedContent.length * 5 + 2, pageCount);
              doc.text(wrappedContent, margin, y);
              y += wrappedContent.length * 5 + 2;
           }

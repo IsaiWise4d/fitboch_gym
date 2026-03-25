@@ -6,6 +6,8 @@ import { Bell } from "lucide-react";
 import Link from "next/link";
 import { ActiveExerciseTracker } from "@/components/ejercicios/ActiveExerciseTracker";
 import { RecentExercisesList } from "@/components/ejercicios/RecentExercisesList";
+import { pickPhrase } from "@/lib/server/motivation";
+import { InicioFrase } from "@/components/dashboard/InicioFrase";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -54,6 +56,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-xl font-bold">Hola, {nombre}</h1>
         <p className="text-sm text-muted-foreground">Bienvenido a FitBoch</p>
+        <InicioFrase initialFrase={pickPhrase(undefined)} seed={profile?.id} />
       </div>
 
       {/* Notificación de rutina pendiente */}

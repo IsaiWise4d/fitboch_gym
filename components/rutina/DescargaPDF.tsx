@@ -37,6 +37,10 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
         doc.rect(0, 0, pageW, pageH, "F");
       }
 
+      // Load watermark helper (vector preferred, image fallback)
+      const watermarkMod = await import("@/lib/pdf/watermark");
+      const { drawWatermark } = watermarkMod;
+
       function drawFooter(pageNum: number) {
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_SECONDARY);
@@ -49,6 +53,8 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
           pageCount.n++;
           drawBackground();
           drawFooter(pageCount.n);
+          // redraw watermark on every new page using dieta color
+          drawWatermark(doc, pageW, pageH, { color: PRIMARY as any, opacity: 0.03, angle: 35 });
           y = margin + 5;
           return true;
         }
@@ -58,6 +64,8 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
       const pageCount = { n: 1 };
       drawBackground();
       drawFooter(1);
+      // draw watermark on first page using dieta color so both PDFs match
+      drawWatermark(doc, pageW, pageH, { color: PRIMARY as any, opacity: 0.03, angle: 35 });
       y = margin + 5;
 
       // Header

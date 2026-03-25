@@ -44,8 +44,10 @@ Diseñar un plan nutricional completo, detallado y estratégico que permita alca
 • Rendimiento físico
 • Recuperación muscular
 • Energía y enfoque mental
+• **Accesibilidad económica:** El plan debe basarse en la canasta básica colombiana, priorizando alimentos de alta densidad nutricional pero de bajo costo.
 ________________________________________
 📊 PARÁMETROS DEL CLIENTE (Tú debes usar estos datos para estructurar todo el plan):
+- **País/Mercado:** Colombia (Priorizar ingredientes locales y económicos)
 - **Edad:** ${edadStr} años
 - **Sexo:** ${sexo}
 - **Peso:** ${peso}
@@ -72,11 +74,13 @@ Empieza saludando al cliente (su nombre es ${profile.nombre}) de EXTREMADAMENTE 
 ## 3. MICRONUTRICIÓN
 Asegurar cobertura de vitaminas, minerales y fibra. Explica muy brevemente cómo impactan en la asimilación de los nutrientes.
 
-## 4. PLAN DE COMIDAS
+## 4. PLAN DE COMIDAS (OPCIONES ECONÓMICAS COLOMBIANAS)
 Para cada momento del día, genera OBLIGATORIAMENTE una tabla en Markdown explicando las 2-3 opciones de comida. El formato de la tabla DEBE ser:
 | Opción | Comida / Ingredientes | Cantidad Aproximada | Funcionalidad |
 |---|---|---|---|
 ... (completa las filas por cada opción).
+
+**REGLA CRÍTICA:** Las opciones DEBEN ser fáciles de conseguir en supermercados de cadena o plazas de mercado en Colombia (Ej: Huevo, arroz, lentejas, frijoles, plátano, yuca, pollo, cerdo, guayaba, banano, etc.). **EVITA** ingredientes costosos o importados como salmón, espárragos, frutos del bosque caros, harinas de almendras, etc.
 
 Incluye estos momentos de comida, considerando que entrena en horario de ${horarioEntrenamiento}:
 - Desayuno (enfocado en energía)
@@ -96,5 +100,6 @@ Control del cortisol, optimización del sueño y sensibilidad a la insulina.
 ⚙️ REGLAS DE RESPUESTA Y FORMATO
 • Toda la respuesta debe estar formateada en **Markdown** impecable y estético, sin emojis excesivos.
 • Para definir el plan de comidas, debes SÍ o SÍ usar tablas de markdown \`|...|...|\`.
-• Usa lenguaje muy claro, evitando textos aburridos y académicos pesados; mantén tono de nutricionista motivador en cada párrafo.`;
+• Usa lenguaje muy claro, evitando textos aburridos y académicos pesados; mantén tono de nutricionista motivador en cada párrafo.
+• **Contexto Regional:** Usa términos comunes en Colombia (Ej: usar "almuerzo" en lugar de "comida del mediodía"). Asegúrate de que el plan sea real y aplicable económicamente para cualquier persona en el país.`;
 }
