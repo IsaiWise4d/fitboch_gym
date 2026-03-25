@@ -4,6 +4,7 @@ import { Users, AlertTriangle, XCircle, UserCheck } from "lucide-react";
 import { addDays, format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
+import { getHoyColombia } from "@/lib/utils/fecha";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -15,7 +16,7 @@ export default async function AdminDashboardPage() {
     redirect("/login");
   }
 
-  const hoy = new Date().toISOString().split("T")[0];
+  const hoy = getHoyColombia();
   const en7dias = addDays(new Date(), 7).toISOString().split("T")[0];
 
   // Consultas en paralelo

@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 
 interface InicioFraseProps {
+  initialFrase?: string;
   seed?: string | null;
 }
 
-export function InicioFrase({ seed }: InicioFraseProps) {
+export function InicioFrase({ initialFrase, seed }: InicioFraseProps) {
   const [frase, setFrase] = useState<string>(
-    "La disciplina diaria construye resultados permanentes."
+    initialFrase || "La disciplina diaria construye resultados permanentes."
   );
 
   useEffect(() => {

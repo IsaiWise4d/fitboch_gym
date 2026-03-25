@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getHoyColombia } from "@/lib/utils/fecha";
 import { FormularioNutricion } from "@/components/nutricion/FormularioNutricion";
 import { PlanViewer } from "@/components/nutricion/PlanViewer";
 import { Apple, Lock, ShieldAlert, UserCog } from "lucide-react";
@@ -30,7 +31,7 @@ export default async function PlanNutricionalPage() {
         .select("*")
         .eq("usuario_id", user.id)
         .eq("estado", "activa")
-        .gte("fecha_fin", new Date().toISOString().split("T")[0])
+        .gte("fecha_fin", getHoyColombia())
         .order("fecha_fin", { ascending: false })
         .limit(1)
         .maybeSingle(),

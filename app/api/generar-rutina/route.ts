@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { construirPromptRutina, type DatosRutina } from "@/lib/ai/prompts";
 import { NextResponse } from "next/server";
 import type { Json } from "@/types/database";
+import { getHoyColombia } from "@/lib/utils/fecha";
 
 export const maxDuration = 60;// Gemini puede tardar en responder
 
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       .select("*")
       .eq("usuario_id", user.id)
       .eq("estado", "activa")
-      .gte("fecha_fin", new Date().toISOString().split("T")[0])
+      .gte("fecha_fin", getHoyColombia())
       .eq("renovacion_habilitada", true)
       .maybeSingle();
 

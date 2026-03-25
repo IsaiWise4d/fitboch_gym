@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getHoyColombia } from "@/lib/utils/fecha";
 import { MembresiaCard } from "@/components/dashboard/MembresiaCard";
 import { RutinaDiaria } from "@/components/dashboard/RutinaDiaria";
 import { Bell } from "lucide-react";
@@ -26,7 +27,7 @@ export default async function DashboardPage() {
       .select("*")
       .eq("usuario_id", user.id)
       .eq("estado", "activa")
-      .gte("fecha_fin", new Date().toISOString().split("T")[0])
+      .gte("fecha_fin", getHoyColombia())
       .order("fecha_fin", { ascending: false })
       .limit(1)
       .maybeSingle(),

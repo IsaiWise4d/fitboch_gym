@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { getHoyColombia } from "@/lib/utils/fecha";
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
     }
 
-    const hoy = new Date().toISOString().split("T")[0];
+    const hoy = getHoyColombia();
 
     // Buscar membresías activas existentes (si existen varias, nos quedamos con la más reciente)
     const { data: membresiasActivas, error: activasError } = await supabase
