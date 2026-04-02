@@ -1,21 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { History, Dumbbell, Trash2 } from "lucide-react";
-import { EjercicioCard } from "./EjercicioCard";
+import { getRangoDiaColombiaUTC } from "@/lib/utils/fecha";
+
+interface SerieEjercicio {
+  serie_numero: number;
+  peso_kg: number;
+  repeticiones: number;
+}
+
+interface EjercicioResumen {
+  id: string;
+  nombre: string;
+  grupo_muscular: string;
+  categoria: string;
+  nivel: string;
+  activo: boolean;
+}
+
+interface HistorialRecienteItem {
+  id: string;
+  fecha_completado: string;
+  tiempo_descanso_minutos: number;
+  ejercicios: EjercicioResumen | null;
+  series_ejercicios: SerieEjercicio[] | null;
+}
 
 export function RecentExercisesList() {
-  const [historial, setHistorial] = useState<any[]>([]);
+  const [historial, setHistorial] = useState<HistorialRecienteItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [fechaColombiaActual, setFechaColombiaActual] = useState(
+    () => getRangoDiaColombiaUTC().fechaColombia
+  );
+  const supabase = useMemo(() => createClient(), []);
 
-  const loadHistorial = async () => {
+  const loadHistorial = useCallback(async () => {
     setLoading(true);
+    const { inicioUtcIso, finUtcIso } = getRangoDiaColombiaUTC();
+
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
+    if (!userData.user) {
+      setHistorial([]);
+      setLoading(false);
+      return;
+    }
 
     const { data, error } = await supabase
       .from("historial_ejercicios")
@@ -27,15 +59,29 @@ export function RecentExercisesList() {
         series_ejercicios(serie_numero, peso_kg, repeticiones)
       `)
       .eq("user_id", userData.user.id)
-      .order("fecha_completado", { ascending: false })
-      .limit(5);
+      .gte("fecha_completado", inicioUtcIso)
+      .lt("fecha_completado", finUtcIso)
+      .order("fecha_completado", { ascending: false });
 
     if (error) {
       console.error("Error cargando historial", error);
+      setHistorial([]);
     } else {
-      setHistorial(data || []);
+      setHistorial((data as HistorialRecienteItem[]) || []);
     }
     setLoading(false);
+  }, [supabase]);
+
+  const formatFechaColombia = (fechaIso: string) => {
+    return new Date(fechaIso).toLocaleString("es-CO", {
+      timeZone: "America/Bogota",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   };
 
   const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
@@ -58,15 +104,29 @@ export function RecentExercisesList() {
   };
 
   useEffect(() => {
-    loadHistorial();
+    const timeoutId = window.setTimeout(() => {
+      void loadHistorial();
+    }, 0);
 
     const handleCustomEvent = () => {
-      loadHistorial();
+      void loadHistorial();
     };
 
+    const dayWatcherId = window.setInterval(() => {
+      const { fechaColombia } = getRangoDiaColombiaUTC();
+      if (fechaColombia !== fechaColombiaActual) {
+        setFechaColombiaActual(fechaColombia);
+        void loadHistorial();
+      }
+    }, 60_000);
+
     window.addEventListener('exercise-saved', handleCustomEvent);
-    return () => window.removeEventListener('exercise-saved', handleCustomEvent);
-  }, []);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(dayWatcherId);
+      window.removeEventListener('exercise-saved', handleCustomEvent);
+    };
+  }, [loadHistorial, fechaColombiaActual]);
 
   if (loading) {
     return <div className="animate-pulse h-32 bg-primary/10 rounded-xl" />;
@@ -77,7 +137,7 @@ export function RecentExercisesList() {
       <Card>
         <CardContent className="pt-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
           <History className="h-8 w-8 text-muted-foreground/50" />
-          No hay ejercicios recientes completados aún.
+          No hay ejercicios registrados hoy ({fechaColombiaActual}, hora Colombia).
         </CardContent>
       </Card>
     );
@@ -105,7 +165,7 @@ export function RecentExercisesList() {
 
       <h3 className="font-semibold flex items-center gap-2">
         <History className="h-4 w-4" />
-        Ejercicios Completados Recientemente
+        Ejercicios de Hoy (Colombia)
       </h3>
       <div className="space-y-3">
         {historial.map((h) => {
@@ -121,7 +181,7 @@ export function RecentExercisesList() {
                     {ejercicio.nombre}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {new Date(h.fecha_completado).toLocaleDateString()} • {h.tiempo_descanso_minutos} min descanso
+                    {formatFechaColombia(h.fecha_completado)} • {h.tiempo_descanso_minutos} min descanso
                   </div>
                 </div>
                 <button 
@@ -133,7 +193,10 @@ export function RecentExercisesList() {
                 </button>
               </div>
               <div className="pt-2 border-t border-border mt-2 space-y-1">
-                {h.series_ejercicios?.sort((a: any, b: any) => a.serie_numero - b.serie_numero).map((s: any) => (
+                {(h.series_ejercicios ?? [])
+                  .slice()
+                  .sort((a, b) => a.serie_numero - b.serie_numero)
+                  .map((s) => (
                   <div key={s.serie_numero} className="flex justify-between text-xs items-center">
                     <span className="text-muted-foreground">Serie {s.serie_numero}</span>
                     <span className="font-medium">
