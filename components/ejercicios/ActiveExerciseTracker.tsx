@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Save, X, Dumbbell, Timer, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Save, X, Dumbbell, Timer, AlertTriangle, Loader2, Trophy } from "lucide-react";
 import type { Ejercicio } from "@/types/app";
 
 interface Serie {
@@ -19,6 +19,13 @@ interface ActiveWorkoutState {
   series: Serie[];
 }
 
+interface SupabaseLikeError {
+  code?: string;
+  message?: string;
+  details?: string | null;
+  hint?: string | null;
+}
+
 const INITIAL_STATE: ActiveWorkoutState = {
   ejercicio_id: "",
   tiempo_descanso: 1.5,
@@ -30,6 +37,10 @@ export function ActiveExerciseTracker() {
   const [state, setState] = useState<ActiveWorkoutState>(INITIAL_STATE);
   const [ejercicios, setEjercicios] = useState<Ejercicio[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [prPesoMaximo, setPrPesoMaximo] = useState<number | null>(null);
+  const [isPrLoading, setIsPrLoading] = useState(false);
+  const [prError, setPrError] = useState<string | null>(null);
   
   // States for Dropdown
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -38,7 +49,7 @@ export function ActiveExerciseTracker() {
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const savedState = localStorage.getItem("fitboch_active_workout");
@@ -58,7 +69,7 @@ export function ActiveExerciseTracker() {
       }
     }
     loadEjercicios();
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (isOpen) {
@@ -90,8 +101,56 @@ export function ActiveExerciseTracker() {
     });
   };
 
+  const formatPeso = (peso: number) => {
+    if (Number.isInteger(peso)) return String(peso);
+    return peso.toFixed(1).replace(/\.0$/, "");
+  };
+
+  const loadPrEjercicio = useCallback(async (ejercicioId: string) => {
+    setIsPrLoading(true);
+    setPrError(null);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        setPrPesoMaximo(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("series_ejercicios")
+        .select("peso_kg, historial_ejercicios!inner(user_id, ejercicio_id)")
+        .eq("historial_ejercicios.user_id", userData.user.id)
+        .eq("historial_ejercicios.ejercicio_id", ejercicioId)
+        .order("peso_kg", { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      setPrPesoMaximo(data?.[0]?.peso_kg ?? null);
+    } catch (error) {
+      console.error("Error loading PR:", error);
+      setPrError("No se pudo cargar tu PR en este momento.");
+      setPrPesoMaximo(null);
+    } finally {
+      setIsPrLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!state.ejercicio_id) {
+      setPrPesoMaximo(null);
+      setPrError(null);
+      setIsPrLoading(false);
+      return;
+    }
+
+    loadPrEjercicio(state.ejercicio_id);
+  }, [state.ejercicio_id, loadPrEjercicio]);
+
   const executeSave = async () => {
     setIsSaving(true);
+    setSaveError(null);
     setShowSaveConfirm(false);
     
     try {
@@ -121,17 +180,33 @@ export function ActiveExerciseTracker() {
         .from("series_ejercicios")
         .insert(seriesToInsert);
 
-      if (seriesError) throw seriesError;
+      if (seriesError) {
+        await supabase
+          .from("historial_ejercicios")
+          .delete()
+          .eq("id", historialData.id);
+        throw seriesError;
+      }
 
       setState({
         ...state,
         series: [{ peso: state.series[state.series.length - 1]?.peso || 0, reps: 0 }]
       });
+
+      await loadPrEjercicio(state.ejercicio_id);
       
       window.dispatchEvent(new Event('exercise-saved'));
 
     } catch (error) {
       console.error("Error saving exercise:", error);
+      const dbError = error as SupabaseLikeError;
+      const rawMessage = `${dbError?.message ?? ""} ${dbError?.details ?? ""} ${dbError?.hint ?? ""}`.toLowerCase();
+
+      if (dbError?.code === "23514" || (rawMessage.includes("peso_kg") && rawMessage.includes("check"))) {
+        setSaveError("No se pudo guardar: la base de datos tiene un límite para este campo de peso. Ajusta ese límite en Supabase si necesitas más rango.");
+      } else {
+        setSaveError(dbError?.message || "No se pudo guardar el ejercicio. Intenta de nuevo.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -268,6 +343,41 @@ export function ActiveExerciseTracker() {
           </div>
         )}
 
+        {state.ejercicio_id && (
+          <div className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-primary" />
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary/90">
+                  PR del ejercicio
+                </p>
+              </div>
+              {isPrLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+            </div>
+
+            {prPesoMaximo !== null ? (
+              <div className="mt-1.5 flex items-end gap-2">
+                <span className="text-2xl font-bold text-primary leading-none">
+                  {formatPeso(prPesoMaximo)} kg
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Tu mejor marca registrada
+                </span>
+              </div>
+            ) : (
+              <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                Aun no tienes PR en este ejercicio. Haz al menos una serie para definir tu PR.
+              </p>
+            )}
+
+            {prError && (
+              <p className="mt-1.5 text-xs text-destructive">
+                {prError}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Descanso */}
         <div className="space-y-1">
           <Label htmlFor="descanso-input" className="text-xs text-muted-foreground flex items-center gap-1">
@@ -300,7 +410,7 @@ export function ActiveExerciseTracker() {
                     type="number" 
                     placeholder="0" 
                     min="0" 
-                    max="200" 
+                    max="1000" 
                     step="0.5" 
                     value={serie.peso === 0 ? "" : serie.peso} 
                     onChange={(e) => updateSerie(idx, "peso", parseFloat(e.target.value) || 0)}
@@ -341,6 +451,12 @@ export function ActiveExerciseTracker() {
             </p>
           </div>
         </div>
+
+        {saveError && (
+          <div className="text-[12px] text-destructive bg-destructive/10 border border-destructive/30 rounded-lg p-2.5">
+            {saveError}
+          </div>
+        )}
 
         {/* Acciones Finales */}
         <div className="pt-2 grid grid-cols-2 gap-3">
