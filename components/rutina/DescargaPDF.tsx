@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, FileText } from "lucide-react";
 import type { Rutina } from "@/types/app";
-import { parsearDiasRutina } from "@/lib/utils/parsear-rutina";
+import { cleanMarkdownPdfText, parseMarkdownTable } from "@/lib/pdf/markdown-table";
 
 interface DescargaPDFProps {
   rutina: Rutina;
@@ -27,7 +27,6 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
       // Colores Premium FitBoch (Brand Yellow)
       const PRIMARY = [249, 198, 51] as const; 
       const BG_DARK = [14, 14, 14] as const;
-      const CARD_BG = [22, 22, 22] as const;
       const TEXT_PRIMARY = [255, 255, 255] as const;
       const TEXT_SECONDARY = [180, 180, 180] as const;
       const BORDER_COLOR = [45, 45, 45] as const;
@@ -49,6 +48,8 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
 
       function checkNewPage(needed: number, pageCount: { n: number }) {
         if (y + needed > pageH - 15) {
+          const currentFont = doc.getFont();
+          const currentFontSize = doc.getFontSize();
           doc.addPage();
           pageCount.n++;
           drawBackground();
@@ -56,6 +57,8 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
           // redraw watermark on every new page using dieta color
           // Use a subtle white watermark instead of the brand yellow to avoid "super yellow" look
           drawWatermark(doc, pageW, pageH, { color: [255, 255, 255], opacity: 0.02, angle: 35 });
+          doc.setFont(currentFont.fontName, currentFont.fontStyle || "normal");
+          doc.setFontSize(currentFontSize);
           y = margin + 5;
           return true;
         }
@@ -92,81 +95,107 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
 
       y += 35;
 
-      function drawTable(tableData: string[][]) {
-        if (tableData.length === 0) return;
-        const headers = tableData[0].map(h => h.replace(/\*\*/g, "").replace(/\*/g, "").trim());
-        const body = tableData.slice(1);
-        
-        // Calcula pesos dinámicos para darle más espacio a columnas anchas
-        const weights = headers.map(h => {
-           const hUpper = h.toUpperCase();
-           if (hUpper.includes("EJERCICIO") || hUpper.includes("COMIDA") || hUpper.includes("INGREDIENTES")) return 3.5;
-           if (hUpper.includes("FUNCIONALIDAD") || hUpper.includes("NOTAS")) return 2.5;
-           if (hUpper.includes("OPCIÓN")) return 1.5;
-           return 1;
+      function drawTable(tableLines: string[]) {
+        const tableData = parseMarkdownTable(tableLines, { maxColumns: 6 });
+        if (!tableData) return;
+
+        const { headers, rows } = tableData;
+        const weights = headers.map((header) => {
+          const text = header.toUpperCase();
+          if (
+            text.includes("EJERCICIO") ||
+            text.includes("COMIDA") ||
+            text.includes("INGREDIENTES")
+          ) {
+            return 3.4;
+          }
+          if (text.includes("FUNCIONALIDAD") || text.includes("NOTAS")) {
+            return 2.4;
+          }
+          if (
+            text.includes("SERIES") ||
+            text.includes("REPS") ||
+            text.includes("RIR") ||
+            text.includes("RPE") ||
+            text.includes("TEMPO") ||
+            text.includes("DESCANSO") ||
+            text.includes("OPCIÓN")
+          ) {
+            return 1.2;
+          }
+          return 1.6;
         });
-        
+
         const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-        const colWidths = weights.map(w => (w / totalWeight) * contentW);
+        const colWidths = weights.map((w) => (w / totalWeight) * contentW);
         const getColX = (index: number) => {
           let x = margin;
           for (let i = 0; i < index; i++) x += colWidths[i];
           return x;
         };
-        
-        checkNewPage(12, pageCount);
-        // Header Tabla
-        doc.setFillColor(35, 35, 35);
-        doc.rect(margin, y, contentW, 8, "F");
+
         doc.setFontSize(7.5);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...PRIMARY);
-        
-        headers.forEach((h, i) => {
-          const colW = colWidths[i];
-          const xPos = getColX(i);
-          const wrappedH = doc.splitTextToSize(h.toUpperCase(), colW - 2);
-          doc.text(wrappedH, xPos + 2, y + 5);
+        const headerLines = headers.map((header, i) =>
+          doc.splitTextToSize(header.toUpperCase(), Math.max(colWidths[i] - 3, 8))
+        );
+        const maxHeaderLines = Math.max(1, ...headerLines.map((line) => line.length));
+        const headerHeight = Math.max(8, maxHeaderLines * 3.8 + 2.5);
+
+        const rowMetrics = rows.map((row) => {
+          const wrappedCells = row.map((cell, i) =>
+            doc.splitTextToSize(cleanMarkdownPdfText(cell), Math.max(colWidths[i] - 3, 8))
+          );
+          const maxLines = Math.max(1, ...wrappedCells.map((lines) => lines.length));
+          const rowHeight = Math.max(6.5, maxLines * 4 + 2);
+          return { wrappedCells, rowHeight };
         });
-        
-        y += 8;
-        
-        // Body Tabla
+
+        const totalTableHeight =
+          headerHeight + rowMetrics.reduce((sum, row) => sum + row.rowHeight, 0) + 8;
+        const maxSinglePageTableHeight = pageH - 15 - (margin + 5);
+
+        if (totalTableHeight <= maxSinglePageTableHeight) {
+          checkNewPage(totalTableHeight, pageCount);
+        } else {
+          checkNewPage(headerHeight + 3, pageCount);
+        }
+
+        doc.setFillColor(35, 35, 35);
+        doc.rect(margin, y, contentW, headerHeight, "F");
+        doc.setTextColor(...PRIMARY);
+
+        headerLines.forEach((lines, i) => {
+          const xPos = getColX(i);
+          doc.text(lines, xPos + 1.5, y + 4);
+        });
+
+        y += headerHeight;
+
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_PRIMARY);
-        
-        body.forEach((row) => {
-          // Asegurarse de que row tenga la misma longitud que headers
-          const paddedRow = [...row];
-          while (paddedRow.length < headers.length) paddedRow.push("");
 
-          const wrappedCells = paddedRow.map((cell, i) => {
-             const cleanCell = cell.replace(/\*\*/g, "").replace(/\*/g, "").trim();
-             return doc.splitTextToSize(cleanCell, colWidths[i] - 4);
-          });
-          
-          const maxLines = Math.max(1, ...wrappedCells.map(lines => lines.length));
-          const rowHeight = (maxLines * 4.5) + 3; // base padding + text height
-          
-          checkNewPage(rowHeight + 4, pageCount);
-          
+        rowMetrics.forEach((row) => {
+          const { wrappedCells, rowHeight } = row;
+
+          checkNewPage(rowHeight + 2, pageCount);
+
           wrappedCells.forEach((lines, i) => {
             const xPos = getColX(i);
-            doc.text(lines, xPos + 2, y + 4.5);
+            doc.text(lines, xPos + 1.5, y + 4);
           });
-          
+
           y += rowHeight;
-          
           doc.setDrawColor(...BORDER_COLOR);
           doc.setLineWidth(0.1);
           doc.line(margin, y, margin + contentW, y);
         });
+
         y += 6;
       }
 
       // Intro / Resumen
-      const dias = parsearDiasRutina(rutina.texto_rutina);
       const intro = rutina.texto_rutina.split("##")[0].trim();
       
       if (intro) {
@@ -180,7 +209,7 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
         doc.setFontSize(9);
         doc.setTextColor(...TEXT_SECONDARY);
         
-        const cleanIntro = intro.replace(/#/g, "").replace(/\*\*/g, "").replace(/\*/g, "").trim();
+        const cleanIntro = cleanMarkdownPdfText(intro.replace(/#/g, " "));
         const introLines = doc.splitTextToSize(cleanIntro, contentW);
         doc.text(introLines, margin, y);
         y += introLines.length * 5 + 10;
@@ -205,49 +234,50 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
         doc.setFontSize(9);
         doc.setTextColor(...TEXT_SECONDARY);
         
-        const rowsForTable: string[][] = [];
-        
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) {
-             y += 2;
-             continue;
-          }
-          
-          if (line.includes("|") && line.startsWith("|")) {
-             if (line.includes("---")) continue; // markdown table separator
-             const cols = line.split("|").filter(c => c.trim() !== "").map(c => c.trim());
-             rowsForTable.push(cols);
-          } else {
-             // Si estabamos acumulando una tabla, dibujarla primero
-             if (rowsForTable.length > 0) {
-               drawTable(rowsForTable);
-               rowsForTable.length = 0;
-               doc.setFont("helvetica", "normal");
-               doc.setFontSize(9);
+         const tableLines: string[] = [];
+         
+         for (let i = 1; i < lines.length; i++) {
+           const line = lines[i].trim();
+           if (!line) {
+             if (tableLines.length > 0) {
+               drawTable(tableLines);
+               tableLines.length = 0;
              }
-             
-             doc.setTextColor(...TEXT_SECONDARY);
-             
-             let cleanLine = line;
-             if (cleanLine.startsWith("- ")) {
-               cleanLine = "• " + cleanLine.substring(2);
-             } else if (cleanLine.startsWith("* ")) {
-               cleanLine = "• " + cleanLine.substring(2);
-             }
-             cleanLine = cleanLine.replace(/#/g, "").replace(/\*\*/g, "").replace(/\*/g, "");
-             
-             const wrappedContent = doc.splitTextToSize(cleanLine, contentW);
-             checkNewPage(wrappedContent.length * 5 + 2, pageCount);
-             doc.text(wrappedContent, margin, y);
+              y += 2;
+              continue;
+           }
+           
+           if (line.includes("|") && line.startsWith("|")) {
+             tableLines.push(line);
+           } else {
+             if (tableLines.length > 0) {
+               drawTable(tableLines);
+               tableLines.length = 0;
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(9);
+              }
+              
+              doc.setTextColor(...TEXT_SECONDARY);
+              
+              let cleanLine = line;
+              if (cleanLine.startsWith("- ")) {
+                cleanLine = "• " + cleanLine.substring(2);
+              } else if (cleanLine.startsWith("* ")) {
+                cleanLine = "• " + cleanLine.substring(2);
+              }
+              cleanLine = cleanMarkdownPdfText(cleanLine.replace(/#/g, " "));
+              
+              if (!cleanLine) continue;
+              const wrappedContent = doc.splitTextToSize(cleanLine, contentW);
+              checkNewPage(wrappedContent.length * 5 + 2, pageCount);
+              doc.text(wrappedContent, margin, y);
              y += wrappedContent.length * 5 + 2;
           }
-        }
-        
-        // Si la sección termina con una tabla
-        if (rowsForTable.length > 0) {
-           drawTable(rowsForTable);
-        }
+         }
+         
+         if (tableLines.length > 0) {
+            drawTable(tableLines);
+         }
         
         y += 5;
       });

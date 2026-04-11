@@ -64,12 +64,13 @@ export function UsuarioDetalle({ profile, membresias, rutinas, planesNutricional
 
   const membresiaActiva = membresias.find((m) => m.estado === "activa") ?? null;
   const rutinaActiva = rutinas.find((r) => r.estado === "activa") ?? null;
-  const planNutriActivo = planesNutricionales && planesNutricionales.length > 0 ? planesNutricionales[0] : null; // Asumimos el mas reciente es active
+  const planNutriActivo = planesNutricionales.find((p) => p.estado === "activa") ?? null;
   const hoy = startOfDay(new Date());
   const membresiaVigente = membresiaActiva
     ? !isBefore(startOfDay(parseISO(membresiaActiva.fecha_fin)), hoy)
     : false;
   const [confirmarNuevaRutina, setConfirmarNuevaRutina] = useState(false);
+  const [confirmarNuevoPlanNutricional, setConfirmarNuevoPlanNutricional] = useState(false);
   const [confirmarEliminarMembresia, setConfirmarEliminarMembresia] = useState(false);
   const [confirmarEliminarUsuario, setConfirmarEliminarUsuario] = useState(false);
   const [confirmarToggleUsuario, setConfirmarToggleUsuario] = useState(false);
@@ -193,6 +194,32 @@ export function UsuarioDetalle({ profile, membresias, rutinas, planesNutricional
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Error al habilitar rutina");
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleHabilitarPlanNutricional() {
+    setLoading("plan-nutri");
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/habilitar-plan-nutricional", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          usuario_id: profile.id,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al habilitar nuevo plan nutricional");
       } else {
         router.refresh();
       }
@@ -795,6 +822,60 @@ export function UsuarioDetalle({ profile, membresias, rutinas, planesNutricional
           </p>
         )}
 
+        {membresiaActiva &&
+          planNutriActivo &&
+          membresiaActiva.plan_nutricional_habilitado &&
+          !confirmarNuevoPlanNutricional && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setConfirmarNuevoPlanNutricional(true)}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Gestionar nuevo plan nutricional
+            </Button>
+          )}
+
+        {confirmarNuevoPlanNutricional && (
+          <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-warning">
+              <AlertTriangle className="h-4 w-4" />
+              ¿Estás seguro?
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Esta acción archivará el plan nutricional activo del usuario y le permitirá
+              generar uno nuevo. El plan actual ya no será visible para el usuario.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setConfirmarNuevoPlanNutricional(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 bg-warning text-black hover:bg-warning/80"
+                onClick={() => {
+                  setConfirmarNuevoPlanNutricional(false);
+                  handleHabilitarPlanNutricional();
+                }}
+                disabled={loading === "plan-nutri"}
+              >
+                {loading === "plan-nutri" ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                )}
+                Sí, archivar y habilitar
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* AVISO SOLO PC PARA EDITAR PLAN */}
         {planNutriActivo && (
           <div className="min-w-0 space-y-2 rounded-lg border border-border bg-white/5 p-3 mt-4">
@@ -905,6 +986,24 @@ export function UsuarioDetalle({ profile, membresias, rutinas, planesNutricional
                     {format(parseISO(r.created_at), "d MMM yyyy", { locale: es })}
                   </p>
                   <p className="text-xs text-muted-foreground">Archivada</p>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {planesNutricionales.filter((p) => p.estado === "archivada").length > 0 && (
+        <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+          <p className="text-sm font-medium">Historial de planes nutricionales</p>
+          <div className="divide-y divide-border">
+            {planesNutricionales
+              .filter((p) => p.estado === "archivada")
+              .map((p) => (
+                <div key={p.id} className="py-2 text-sm">
+                  <p>
+                    Objetivo: {p.objetivo} · {format(parseISO(p.created_at), "d MMM yyyy", { locale: es })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Archivado</p>
                 </div>
               ))}
           </div>

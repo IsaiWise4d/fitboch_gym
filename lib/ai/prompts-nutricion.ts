@@ -19,6 +19,7 @@ export function construirPromptNutricional({
     ? `${new Date().getFullYear() - new Date(profile.fecha_nacimiento).getFullYear()}`
     : "No especificada";
   const sexo = profile.genero || "No especificado";
+  const esMujer = profile.genero === "femenino";
   const peso = profile.peso_kg ? `${profile.peso_kg} kg` : "No especificado";
   const altura = profile.altura_cm ? `${profile.altura_cm} cm` : "No especificada";
   const porcentajeGrasa = profile.porcentaje_grasa || "No especificado";
@@ -87,6 +88,21 @@ Incluye estos momentos de comida, considerando que entrena en horario de ${horar
 - Almuerzo (para rendimiento/recuperación)
 - Snacks/Pre-Post Entreno según el horario.
 - Cena (recuperación profunda)
+
+${esMujer
+    ? `### 4.1 AJUSTE ESPECIAL MUJERES — DÍAS DE PIERNA/GLÚTEO (OBLIGATORIO)
+Debes incluir una subsección específica para los días más pesados de pierna/glúteo con este título exacto: **"Días de Pierna Pesados (Mujer)"**.
+
+En esa subsección explica y entrega recomendaciones prácticas para:
+- Aumentar estratégicamente carbohidratos alrededor del entreno de pierna (pre y post entreno), manteniendo el balance semanal.
+- Ajustar hidratación y sodio para mejorar rendimiento y recuperación.
+- Definir una opción de snack pre-entreno y una opción post-entreno para esos días.
+- Mantener proteína estable y ajustar grasas lejos de la ventana de entreno intenso.
+- Aclarar que es un ajuste de rendimiento/recuperación para entrenos demandantes, sin romper el objetivo principal del plan.
+
+Incluye al menos una mini tabla en markdown para este bloque con opciones concretas de alimentos accesibles en Colombia.
+`
+    : ""}
 
 ## 5. TIMING NUTRICIONAL
 Estrategias en qué momento comer los carbohidratos, como manejar los ayunos si aplica, y uso del agua/sodio durante el entrenamiento.

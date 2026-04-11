@@ -330,6 +330,7 @@ export interface Database {
           nivel_actividad: string | null;
           horario_entrenamiento: string | null;
           restricciones: string | null;
+          estado: "activa" | "archivada";
           created_at: string;
         };
         Insert: {
@@ -340,6 +341,7 @@ export interface Database {
           nivel_actividad?: string | null;
           horario_entrenamiento?: string | null;
           restricciones?: string | null;
+          estado?: "activa" | "archivada";
           created_at?: string;
         };
         Update: {
@@ -350,6 +352,7 @@ export interface Database {
           nivel_actividad?: string | null;
           horario_entrenamiento?: string | null;
           restricciones?: string | null;
+          estado?: "activa" | "archivada";
           created_at?: string;
         };
         Relationships: [

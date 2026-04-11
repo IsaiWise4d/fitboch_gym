@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getHoyColombia } from "@/lib/utils/fecha";
 import { FormularioNutricion } from "@/components/nutricion/FormularioNutricion";
 import { PlanViewer } from "@/components/nutricion/PlanViewer";
-import { Apple, Lock, ShieldAlert, UserCog } from "lucide-react";
+import { Lock, ShieldAlert, UserCog } from "lucide-react";
 
 export default async function PlanNutricionalPage() {
   const supabase = await createClient();
@@ -23,6 +23,7 @@ export default async function PlanNutricionalPage() {
         .from("planes_nutricionales")
         .select("*")
         .eq("user_id", user.id)
+        .eq("estado", "activa")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),

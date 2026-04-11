@@ -110,10 +110,10 @@ export function drawVectorWatermarkOnDoc(
   try {
     // Use vector text + GState if available for best quality
     if (typeof doc.GState === "function" && typeof doc.setGState === "function") {
+      doc.saveGraphicsState();
       doc.setTextColor(...color);
       doc.setFontSize(fontSize);
       doc.setFont("helvetica", "bold");
-      doc.saveGraphicsState();
       const gs = doc.GState({ opacity });
       if (gs) doc.setGState(gs);
 

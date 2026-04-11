@@ -45,6 +45,20 @@ export async function POST(req: Request) {
       );
     }
 
+    const { data: planActivo } = await supabase
+      .from("planes_nutricionales")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("estado", "activa")
+      .maybeSingle();
+
+    if (planActivo) {
+      return NextResponse.json(
+        { error: "Ya tienes un plan nutricional activo" },
+        { status: 409 }
+      );
+    }
+
     // Verificar que no haya abusado de intentos recientes (opcional, como en rutina)
     // Para simplificar, generamos el texto.
     
@@ -92,6 +106,7 @@ export async function POST(req: Request) {
       nivel_actividad: nivelActividad,
       horario_entrenamiento: horarioEntrenamiento,
       restricciones,
+      estado: "activa",
     });
 
     if (insertError) {
