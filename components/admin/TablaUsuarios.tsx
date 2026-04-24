@@ -13,7 +13,36 @@ type UsuarioConMembresia = Profile & {
   membresias: Membresia[];
 };
 
+type EstadoClave = "activa" | "por_vencer" | "vencida" | "sin_membresia" | "desactivado";
+
+type UsuarioConMeta = {
+  usuario: UsuarioConMembresia;
+  membresia: Membresia | null;
+  estadoClave: EstadoClave;
+  estado: {
+    label: string;
+    color: string;
+  };
+  fechaFinMs: number | null;
+};
+
 type Filtro = "todos" | "activos" | "por_vencer" | "vencidos" | "sin_membresia" | "desactivados";
+
+const ESTADO_META: Record<EstadoClave, { label: string; color: string }> = {
+  activa: { label: "Activa", color: "text-success" },
+  por_vencer: { label: "Por vencer", color: "text-warning" },
+  vencida: { label: "Vencida", color: "text-error" },
+  sin_membresia: { label: "Sin membresía", color: "text-muted-foreground" },
+  desactivado: { label: "Desactivado", color: "text-error" },
+};
+
+const ORDEN_ESTADO_TODOS: Record<EstadoClave, number> = {
+  por_vencer: 0,
+  activa: 1,
+  vencida: 2,
+  sin_membresia: 3,
+  desactivado: 4,
+};
 
 function getMembresiaActiva(membresias: Membresia[]): Membresia | null {
   return (
@@ -23,26 +52,81 @@ function getMembresiaActiva(membresias: Membresia[]): Membresia | null {
   );
 }
 
-function getEstado(membresia: Membresia | null): {
-  label: string;
-  color: string;
-} {
-  if (!membresia) return { label: "Sin membresía", color: "text-muted-foreground" };
+function getEstadoMembresia(membresia: Membresia | null): EstadoClave {
+  if (!membresia) return "sin_membresia";
   const hoy = startOfDay(new Date());
   const fin = startOfDay(parseISO(membresia.fecha_fin));
-  if (isBefore(fin, hoy)) return { label: "Vencida", color: "text-error" };
-  if (isBefore(fin, addDays(hoy, 7))) return { label: "Por vencer", color: "text-warning" };
-  return { label: "Activa", color: "text-success" };
+  if (isBefore(fin, hoy)) return "vencida";
+  if (isBefore(fin, addDays(hoy, 7))) return "por_vencer";
+  return "activa";
 }
 
-function getEstadoUsuario(usuario: UsuarioConMembresia): {
-  label: string;
-  color: string;
-} {
-  if (!usuario.activo) {
-    return { label: "Desactivado", color: "text-error" };
+function getEstadoUsuario(usuario: UsuarioConMembresia, membresia: Membresia | null): EstadoClave {
+  if (!usuario.activo) return "desactivado";
+  return getEstadoMembresia(membresia);
+}
+
+function getFechaFinMs(membresia: Membresia | null): number | null {
+  if (!membresia) return null;
+  const fechaFin = parseISO(membresia.fecha_fin);
+  if (Number.isNaN(fechaFin.getTime())) return null;
+  return startOfDay(fechaFin).getTime();
+}
+
+function compararPorNombre(a: UsuarioConMeta, b: UsuarioConMeta): number {
+  const nombreA = `${a.usuario.nombre} ${a.usuario.apellido || ""}`.trim();
+  const nombreB = `${b.usuario.nombre} ${b.usuario.apellido || ""}`.trim();
+  return nombreA.localeCompare(nombreB, "es", { sensitivity: "base" });
+}
+
+function compararFechaFinAsc(a: UsuarioConMeta, b: UsuarioConMeta): number {
+  if (a.fechaFinMs === null && b.fechaFinMs === null) return 0;
+  if (a.fechaFinMs === null) return 1;
+  if (b.fechaFinMs === null) return -1;
+  return a.fechaFinMs - b.fechaFinMs;
+}
+
+function compararFechaFinDesc(a: UsuarioConMeta, b: UsuarioConMeta): number {
+  if (a.fechaFinMs === null && b.fechaFinMs === null) return 0;
+  if (a.fechaFinMs === null) return 1;
+  if (b.fechaFinMs === null) return -1;
+  return b.fechaFinMs - a.fechaFinMs;
+}
+
+function compararUsuarios(a: UsuarioConMeta, b: UsuarioConMeta, filtro: Filtro): number {
+  if (filtro === "por_vencer" || filtro === "activos") {
+    return compararFechaFinAsc(a, b) || compararPorNombre(a, b);
   }
-  return getEstado(getMembresiaActiva(usuario.membresias));
+
+  if (filtro === "vencidos") {
+    return compararFechaFinDesc(a, b) || compararPorNombre(a, b);
+  }
+
+  if (filtro === "sin_membresia" || filtro === "desactivados") {
+    return compararPorNombre(a, b);
+  }
+
+  const prioridadA = ORDEN_ESTADO_TODOS[a.estadoClave];
+  const prioridadB = ORDEN_ESTADO_TODOS[b.estadoClave];
+
+  if (prioridadA !== prioridadB) {
+    return prioridadA - prioridadB;
+  }
+
+  if (a.estadoClave === "por_vencer" || a.estadoClave === "activa") {
+    return compararFechaFinAsc(a, b) || compararPorNombre(a, b);
+  }
+
+  if (a.estadoClave === "vencida") {
+    return compararFechaFinDesc(a, b) || compararPorNombre(a, b);
+  }
+
+  return compararPorNombre(a, b);
+}
+
+function formatearMonto(monto: number | null): string {
+  if (monto === null) return "No registrado";
+  return `$${monto.toLocaleString("es-CO")}`;
 }
 
 export function TablaUsuarios({
@@ -54,39 +138,50 @@ export function TablaUsuarios({
   const [filtro, setFiltro] = useState<Filtro>("todos");
 
   const filtrados = useMemo(() => {
-    let resultado = usuarios;
+    let resultado: UsuarioConMeta[] = usuarios.map((usuario) => {
+      const membresia = getMembresiaActiva(usuario.membresias);
+      const estadoClave = getEstadoUsuario(usuario, membresia);
+      return {
+        usuario,
+        membresia,
+        estadoClave,
+        estado: ESTADO_META[estadoClave],
+        fechaFinMs: getFechaFinMs(membresia),
+      };
+    });
 
     // Búsqueda
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase();
       resultado = resultado.filter(
-        (u) =>
-          u.nombre.toLowerCase().includes(q) ||
-          (u.apellido?.toLowerCase().includes(q) ?? false) ||
-          u.email.toLowerCase().includes(q)
+        ({ usuario }) =>
+          usuario.nombre.toLowerCase().includes(q) ||
+          (usuario.apellido?.toLowerCase().includes(q) ?? false) ||
+          usuario.email.toLowerCase().includes(q)
       );
     }
 
     // Filtro por estado
     if (filtro !== "todos") {
-      resultado = resultado.filter((u) => {
-        const estado = getEstadoUsuario(u);
+      resultado = resultado.filter((item) => {
         switch (filtro) {
           case "activos":
-            return estado.label === "Activa";
+            return item.estadoClave === "activa";
           case "por_vencer":
-            return estado.label === "Por vencer";
+            return item.estadoClave === "por_vencer";
           case "vencidos":
-            return estado.label === "Vencida";
+            return item.estadoClave === "vencida";
           case "sin_membresia":
-            return estado.label === "Sin membresía";
+            return item.estadoClave === "sin_membresia";
           case "desactivados":
-            return estado.label === "Desactivado";
+            return item.estadoClave === "desactivado";
           default:
             return true;
         }
       });
     }
+
+    resultado.sort((a, b) => compararUsuarios(a, b, filtro));
 
     return resultado;
   }, [usuarios, busqueda, filtro]);
@@ -142,21 +237,19 @@ export function TablaUsuarios({
             No se encontraron usuarios
           </p>
         ) : (
-          filtrados.map((u) => {
-            const mem = getMembresiaActiva(u.membresias);
-            const estado = getEstadoUsuario(u);
+          filtrados.map(({ usuario, membresia, estado }) => {
             return (
               <Link
-                key={u.id}
-                href={`/admin/usuarios/${u.id}`}
+                key={usuario.id}
+                href={`/admin/usuarios/${usuario.id}`}
                 className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">
-                    {u.nombre} {u.apellido || ""}
+                    {usuario.nombre} {usuario.apellido || ""}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {u.email}
+                    {usuario.email}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
@@ -164,10 +257,15 @@ export function TablaUsuarios({
                     <p className={`text-xs font-medium ${estado.color}`}>
                       {estado.label}
                     </p>
-                    {u.activo && mem && (
-                      <p className="text-xs text-muted-foreground">
-                        {mem.tipo_plan} · {format(parseISO(mem.fecha_fin), "d MMM", { locale: es })}
-                      </p>
+                    {usuario.activo && membresia && (
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          {membresia.tipo_plan} · {format(parseISO(membresia.fecha_fin), "d MMM", { locale: es })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Monto: {formatearMonto(membresia.monto_pagado)}
+                        </p>
+                      </>
                     )}
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />

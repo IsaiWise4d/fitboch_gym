@@ -183,6 +183,16 @@ Siempre que la cantidad de días lo permita, prioriza dividir el tren superior e
 - HIIT si el objetivo es pérdida de grasa o recomposición (2x/semana)
 - LISS si el objetivo es volumen limpio (1–2x/semana, días de descanso activo)
 - Especifica duración, intensidad y protocolo
+${datos.genero === "femenino" ? `
+### D.1 Consideraciones de entrenamiento durante el período menstrual (SOLO SI ES MUJER)
+- Incluye una sección independiente titulada exactamente: **"Consideraciones en período menstrual"**
+- Debe ser una guía profesional, práctica y basada en evidencia para entrenar de forma segura y efectiva durante el ciclo menstrual
+- Explica ajustes concretos de entrenamiento cuando haya síntomas (intensidad, volumen, selección de ejercicios, RPE/RIR y descansos)
+- Incluye tips aplicables en gimnasio sobre manejo de dolor, fatiga, hidratación, sueño y recuperación
+- Sugiere alternativas por nivel de molestia (leve, moderada, alta), manteniendo adherencia sin perder progreso
+- Aclara señales de alerta para pausar el entrenamiento y recomendar valoración médica (sin alarmismo)
+- Mantén un tono profesional y empático, evitando mitos y recomendaciones extremas
+` : ""}
 ${incluirNutricional ? `
 ### E. Plan nutricional general
 - Calorías estimadas (TDEE × factor de actividad ± déficit/superávit)
@@ -206,6 +216,7 @@ La respuesta debe seguir este orden exacto:
 3. **Rutina semanal (Los 7 días)** — Día 1 al Día 7 obligatoriamente, indicando si hay entrenamiento con su tabla o si es descanso.
 4. **Progresión semanal** — Cómo aumentan carga/volumen/densidad cada semana
 6. **Cardio y recuperación activa** — Protocolo HIIT/LISS
+${datos.genero === "femenino" ? `- **Capítulo obligatorio adicional (solo mujer):** incluye una sección independiente titulada **"Consideraciones en período menstrual"**, ubicada justo después de "Cardio y recuperación activa".` : ""}
 ${incluirNutricional ? `7. **Plan nutricional** — Calorías, macros, timing, suplementación
 8. **Sistema de seguimiento** — Métricas y criterios de ajuste
 9. **Justificación científica breve** — 1–2 párrafos que respalden las decisiones clave` : `7. **Sistema de seguimiento** — Métricas y criterios de ajuste
@@ -237,6 +248,7 @@ ${incluirNutricional ? `7. **Plan nutricional** — Calorías, macros, timing, s
 - El plan debe ser sostenible y realista
 - Usa el sistema métrico (kg, cm) en toda la respuesta
 - Escribe completamente en español
+- Si el sexo biológico es mujer, incluir obligatoriamente el capítulo "Consideraciones en período menstrual" con recomendaciones prácticas y seguras
 
 Siempre que sea posible por la cantidad de días, divide el tren superior en dos días: uno para pecho, hombro y tríceps, y otro para bíceps y espalda. Esta división es preferente para maximizar resultados y debe priorizarse si la rutina lo permite.
 
