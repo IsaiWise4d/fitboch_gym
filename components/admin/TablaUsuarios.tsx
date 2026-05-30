@@ -8,6 +8,7 @@ import type { Profile, Membresia } from "@/types/app";
 import { isBefore, addDays, parseISO, startOfDay } from "date-fns";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { calcularEdad } from "@/lib/utils/fecha";
 
 type UsuarioConMembresia = Profile & {
   membresias: Membresia[];
@@ -250,6 +251,9 @@ export function TablaUsuarios({
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {usuario.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    Edad: {usuario.fecha_nacimiento ? `${calcularEdad(usuario.fecha_nacimiento)} años` : "No definida"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">

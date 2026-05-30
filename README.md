@@ -1,36 +1,159 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app)....
+# FitBoch — Aplicación de Gimnasio con IA
 
-## Getting Started
+Applicación web móvil-first para gestión de membresías de gimnasio con generación de rutinas personalizadas usando Inteligencia Artificial (Gemini API).
 
-First, run the development server:
+---
+
+## Características
+
+- **Autenticación**: Login con email/contraseña mediante Supabase Auth
+- **Panel de Usuario**:
+  - Dashboard con estado de membresía
+  - Rutina personalizada generada con IA
+  - Biblioteca de ejercicios
+  - Perfil personal
+  - Plan nutricional
+- **Panel de Administración**:
+  - Gestión de usuarios y membresías
+  - Control de rutinas (habilitar renovaciones)
+  - Biblioteca de ejercicios (CRUD)
+  - Métricas básicas
+
+---
+
+## Stack Tecnológico
+
+| Categoría | Tecnología |
+|-----------|------------|
+| Framework | Next.js 16 (App Router) |
+| Lenguaje | TypeScript |
+| Estilos | Tailwind CSS + shadcn/ui |
+| Base de datos | Supabase (PostgreSQL + RLS) |
+| IA | Google Gemini API |
+| Autenticación | Supabase Auth |
+
+---
+
+## Requisitos Previos
+
+- Node.js 18+
+- pnpm (gestor recomendado)
+- Cuenta de Supabase
+- Cuenta de Google Cloud con Gemini API habilitada
+
+---
+
+## Instalación
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Clonar el repositorio
+git clone <url-del-repositorio>
+cd fitboch
+
+# Instalar dependencias
+pnpm install
+
+# Configurar variables de entorno
+# Copia .env.local y completa los valores
+
+# Iniciar servidor de desarrollo
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables de Entorno
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 
-## Learn More
+# Gemini AI
+GEMINI_API_KEY=AIzaSy...
 
-To learn more about Next.js, take a look at the following resources:
+# App
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Comandos
 
-## Deploy on Vercel
+| Comando | Descripción |
+|---------|-------------|
+| `pnpm dev` | Iniciar servidor de desarrollo |
+| `pnpm build` | Construir para producción |
+| `pnpm start` | Iniciar servidor de producción |
+| `pnpm lint` | Ejecutar eslint |
+| `pnpm tsc --noEmit` | Verificar tipos |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Estructura del Proyecto
+
+```
+fitboch/
+├── app/                    # Next.js App Router
+│   ├── (admin)/          # Rutas de administración
+│   ├── (auth)/           # Rutas de autenticación
+│   ├── (usuario)/        # Rutas de usuario
+│   └── api/              # API Routes
+├── components/           # Componentes React
+├── lib/                  # Utilidades y clientes
+│   ├── supabase/         # Clientes Supabase
+│   └── ai/               # Integración con IA
+└── types/                # Tipos TypeScript
+```
+
+---
+
+## Roles de Usuario
+
+| Rol | Descripción |
+|-----|-------------|
+| `admin` | Acceso completo al panel de administración |
+| `usuario` | Acceso al dashboard personal |
+
+---
+
+## Flujo de Generación de Rutina
+
+1. El admin habilita la renovación desde el panel
+2. El usuario completa el formulario de datos
+3. La app envía los datos a la API de Gemini
+4. La IA genera una rutina personalizada
+5. La rutina se guarda en la base de datos
+6. El usuario puede verla y descargar en PDF
+
+---
+
+## Despliegue
+
+### Vercel (Recomendado)
+
+1. Conectar el repositorio en vercel.com
+2. Agregar las variables de entorno
+3. Hacer deploy desde la rama main
+
+### Auto-alojamiento
+
+El proyecto es compatible con cualquier hosting que soporte Next.js:
+- Railway, Render, DigitalOcean App Platform
+- Contenedores Docker
+
+---
+
+## Contribuir
+
+1. Crear una rama (`git checkout -b feature/nueva-caracteristica`)
+2. Hacer commit de los cambios
+3. Push a la rama
+4. Crear Pull Request
+
+---
+
+## Licencia
+
+MIT

@@ -69,7 +69,7 @@ const ZONAS_LABEL: Record<string, string> = {
 
 const EQUIPAMIENTO_DETALLE_GYM = `
 Gimnasio FitBoch equipado con:
-- Máquinas: aductores, extensión femoral tumbado, sentadilla Smith, prensa (pies cerrados y abiertos), extensión de cuádriceps, pec deck, predicador, remo T, máquina de abdomen
+- Máquinas: aductores, extensión femoral tumbado, sentadilla Smith, sentadilla hack, prensa (pies cerrados y abiertos), extensión de cuádriceps, pec deck, predicador, remo T, máquina de abdomen
 - Poleas: polea alta y baja, jalón en polea (IMPORTANTE: no contamos con agarre neutro, usar solo prono o supino), remo en polea, jalón a una mano, remo a una mano, curl en polea, tríceps en polea, elevación lateral en polea, patada en polea
 - Barras y mancuernas: barra olímpica, barra Z, mancuernas (todo rango), kettlebell rusa
 - Bancos y accesorios: banco plano, banco inclinado, cajón pliométrico, balón Bosu, hip thrust
