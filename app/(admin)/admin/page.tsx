@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Users, AlertTriangle, XCircle, UserCheck } from "lucide-react";
-import { addDays, format, parseISO } from "date-fns";
+import { Users, AlertTriangle, XCircle, UserCheck, Cake } from "lucide-react";
+import { addDays, format, parseISO, isBefore, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 import { getHoyColombia } from "@/lib/utils/fecha";
@@ -26,6 +26,7 @@ export default async function AdminDashboardPage() {
     { data: porVencer },
     { count: vencidas },
     { data: ultimosRegistros },
+    { data: perfilesCumples },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("rol", "usuario").eq("activo", true),
     supabase.from("membresias").select("*", { count: "exact", head: true }).eq("estado", "activa").gte("fecha_fin", hoy),
@@ -43,6 +44,12 @@ export default async function AdminDashboardPage() {
       .eq("activo", true)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("profiles")
+      .select("id, nombre, apellido, email, fecha_nacimiento")
+      .eq("rol", "usuario")
+      .eq("activo", true)
+      .not("fecha_nacimiento", "is", null),
   ]);
 
   const metricas = [
@@ -94,6 +101,56 @@ export default async function AdminDashboardPage() {
           );
         })}
       </div>
+
+      {/* Próximos cumpleaños */}
+      {perfilesCumples && perfilesCumples.length > 0 && (() => {
+        const hoyDate = new Date();
+        const sorted = [...perfilesCumples]
+          .map((p) => {
+            const nacimiento = parseISO(p.fecha_nacimiento!);
+            let proximoCumple = new Date(hoyDate.getFullYear(), nacimiento.getMonth(), nacimiento.getDate());
+            if (isBefore(proximoCumple, hoyDate) || differenceInDays(proximoCumple, hoyDate) === 0) {
+              proximoCumple = new Date(hoyDate.getFullYear() + 1, nacimiento.getMonth(), nacimiento.getDate());
+            }
+            const diasRestantes = differenceInDays(proximoCumple, hoyDate);
+            return { ...p, proximoCumple, diasRestantes };
+          })
+          .sort((a, b) => a.diasRestantes - b.diasRestantes)
+          .slice(0, 5);
+
+        return (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Cake className="h-5 w-5 text-primary" />
+              Próximos cumpleaños
+            </h2>
+            <div className="rounded-lg border border-border bg-surface divide-y divide-border">
+              {sorted.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/admin/usuarios/${p.id}`}
+                  className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium">
+                      {p.nombre} {p.apellido || ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{p.email}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">
+                      {format(p.proximoCumple, "d MMM", { locale: es })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.diasRestantes === 0 ? "¡Hoy!" : `en ${p.diasRestantes} día${p.diasRestantes !== 1 ? "s" : ""}`}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Por vencer */}
       {porVencer && porVencer.length > 0 && (

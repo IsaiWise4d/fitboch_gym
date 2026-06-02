@@ -253,7 +253,7 @@ export function TablaUsuarios({
                     {usuario.email}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    Edad: {usuario.fecha_nacimiento ? `${calcularEdad(usuario.fecha_nacimiento)} años` : "No definida"}
+                    Edad: {usuario.fecha_nacimiento ? `${calcularEdad(usuario.fecha_nacimiento)} años` : "No definida"} · Nacimiento: {usuario.fecha_nacimiento ? format(parseISO(usuario.fecha_nacimiento), "d MMM yyyy", { locale: es }) : "No definido"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
