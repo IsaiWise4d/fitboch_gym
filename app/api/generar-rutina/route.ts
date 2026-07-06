@@ -1,11 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
 import { construirPromptRutina, type DatosRutina } from "@/lib/ai/prompts";
+import { generateText, OpenRouterError } from "@/lib/ai/generateText";
 import { NextResponse } from "next/server";
 import type { Json } from "@/types/database";
 import { getHoyColombia } from "@/lib/utils/fecha";
 
-export const maxDuration = 60;// Gemini puede tardar en responder
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
@@ -73,25 +73,34 @@ export async function POST(request: Request) {
     const incluirNutricional = membresia.plan_nutricional_habilitado === true;
     const prompt = construirPromptRutina(datosUsuario, incluirNutricional);
 
-    // 6. Llamar a Gemini
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key de Gemini no configurada" },
-        { status: 500 }
-      );
+    // 6. Llamar a la IA via OpenRouter
+    let textoRutina: string;
+    let tokensUsados: number | null;
+    let modelo: string;
+    try {
+      const aiResult = await generateText({
+        prompt,
+        system:
+          "Eres un entrenador personal experto en fitness, hipertrofia y fuerza. " +
+          "Respondes en español, con formato Markdown estructurado.",
+      });
+      textoRutina = aiResult.text;
+      tokensUsados = aiResult.tokensUsados;
+      modelo = aiResult.modelo;
+    } catch (err) {
+      if (err instanceof OpenRouterError) {
+        const isConfigError = err.message.includes("no configurada");
+        return NextResponse.json(
+          {
+            error: isConfigError
+              ? "Servicio de IA no configurado"
+              : "Error al conectar con el servicio de IA",
+          },
+          { status: isConfigError ? 500 : 502 }
+        );
+      }
+      throw err;
     }
-
-    const ai = new GoogleGenAI({ apiKey });
-
-      const modelo = "gemini-3-flash-preview";
-
-    const response = await ai.models.generateContent({
-      model: modelo,
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-    });
-
-    const textoRutina = response.text ?? "";
 
     if (!textoRutina) {
       return NextResponse.json(
@@ -108,7 +117,7 @@ export async function POST(request: Request) {
       texto_rutina: textoRutina,
       duracion_plan: "3_meses",
       modelo_ia: modelo,
-      tokens_usados: response.usageMetadata?.totalTokenCount ?? null,
+      tokens_usados: tokensUsados,
     });
 
     if (insertError) {

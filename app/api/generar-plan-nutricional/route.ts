@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
 import { construirPromptNutricional } from "@/lib/ai/prompts-nutricion";
+import { generateText, OpenRouterError } from "@/lib/ai/generateText";
 
 export const maxDuration = 60;
 
@@ -71,25 +71,34 @@ export async function POST(req: Request) {
       restricciones,
     });
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key de Gemini no configurada" },
-        { status: 500 }
-      );
+    const msg =
+      "Genera mi plan nutricional basado en los datos proporcionados.";
+
+    // 2. Llamar a la IA via OpenRouter
+    let fullText: string;
+    try {
+      const aiResult = await generateText({
+        prompt: msg,
+        system:
+          "Eres el mejor nutricionista deportivo. " +
+          promptText +
+          "\n\nFormatea estricto usando MARKDOWN.",
+      });
+      fullText = aiResult.text;
+    } catch (err) {
+      if (err instanceof OpenRouterError) {
+        const isConfigError = err.message.includes("no configurada");
+        return NextResponse.json(
+          {
+            error: isConfigError
+              ? "Servicio de IA no configurado"
+              : "Error al conectar con el servicio de IA",
+          },
+          { status: isConfigError ? 500 : 502 }
+        );
+      }
+      throw err;
     }
-
-    // 2. Llamar a la IA
-    const ai = new GoogleGenAI({ apiKey });
-    const modelo = "gemini-3-flash-preview";
-    const msg = "Eres el mejor nutricionista deportivo. Formatea estricto usando MARKDOWN.\n\n" + promptText + "\n\nGenera mi plan nutricional basado en los datos proporcionados.";
-
-    const response = await ai.models.generateContent({
-      model: modelo,
-      contents: [{ role: "user", parts: [{ text: msg }] }],
-    });
-
-    const fullText = response.text ?? "";
 
     if (!fullText) {
       return NextResponse.json(

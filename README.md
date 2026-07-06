@@ -1,6 +1,6 @@
 # FitBoch — Aplicación de Gimnasio con IA
 
-Applicación web móvil-first para gestión de membresías de gimnasio con generación de rutinas personalizadas usando Inteligencia Artificial (Gemini API).
+Applicación web móvil-first para gestión de membresías de gimnasio con generación de rutinas personalizadas usando Inteligencia Artificial (OpenRouter + DeepSeek).
 
 ---
 
@@ -29,7 +29,7 @@ Applicación web móvil-first para gestión de membresías de gimnasio con gener
 | Lenguaje | TypeScript |
 | Estilos | Tailwind CSS + shadcn/ui |
 | Base de datos | Supabase (PostgreSQL + RLS) |
-| IA | Google Gemini API |
+| IA | OpenRouter (DeepSeek V4 Pro) |
 | Autenticación | Supabase Auth |
 
 ---
@@ -39,7 +39,7 @@ Applicación web móvil-first para gestión de membresías de gimnasio con gener
 - Node.js 18+
 - pnpm (gestor recomendado)
 - Cuenta de Supabase
-- Cuenta de Google Cloud con Gemini API habilitada
+- Cuenta de OpenRouter (https://openrouter.ai/keys) con saldo o API key válida
 
 ---
 
@@ -70,8 +70,12 @@ NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 
-# Gemini AI
-GEMINI_API_KEY=AIzaSy...
+# OpenRouter AI (https://openrouter.ai/keys)
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=deepseek/deepseek-v4-pro
+# Opcional: para rankings de OpenRouter (sin afectar funcionalidad)
+OPENROUTER_SITE_URL=http://localhost:3000
+OPENROUTER_APP_TITLE=FitBoch
 
 # App
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
