@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { construirPromptNutricional } from "@/lib/ai/prompts-nutricion";
 import { generateText, OpenRouterError } from "@/lib/ai/generateText";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   try {
