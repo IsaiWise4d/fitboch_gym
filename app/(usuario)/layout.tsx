@@ -17,9 +17,12 @@ export default async function UsuarioLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("perfil_completo")
+    .select("rol, perfil_completo")
     .eq("id", user.id)
     .single();
+
+  // Los admins siempre van a su panel, no al de usuarios
+  if (profile?.rol === "admin") redirect("/admin");
 
   // Si el perfil no está completo, solo permitir acceso a /perfil
   const perfilCompleto = profile?.perfil_completo ?? false;

@@ -81,6 +81,17 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
+
+    // Bloquear rutas de usuario para admins — siempre van a /admin
+    const userRoutes = ["/dashboard", "/rutina", "/plan-nutricional", "/ejercicios", "/perfil"];
+    if (
+      profile?.rol === "admin" &&
+      userRoutes.some((r) => pathname === r || pathname.startsWith(r + "/"))
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;
