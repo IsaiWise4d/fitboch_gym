@@ -42,7 +42,7 @@ Applicación web móvil-first para gestión de membresías de gimnasio con gener
 - Cuenta de OpenRouter (https://openrouter.ai/keys) con saldo o API key válida
 
 ---
-
+e
 ## Instalación
 
 ```bash
