@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Users, AlertTriangle, XCircle, UserCheck, Cake } from "lucide-react";
-import { addDays, format, parseISO, isBefore, differenceInDays } from "date-fns";
-import { es } from "date-fns/locale";
+import { addDays, parseISO } from "date-fns";
 import Link from "next/link";
-import { getHoyColombia } from "@/lib/utils/fecha";
+import { formatFechaColombia, getHoyColombia } from "@/lib/utils/fecha";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -17,7 +16,7 @@ export default async function AdminDashboardPage() {
   }
 
   const hoy = getHoyColombia();
-  const en7dias = addDays(new Date(), 7).toISOString().split("T")[0];
+  const en7dias = formatFechaColombia(addDays(parseISO(hoy), 7), "yyyy-MM-dd");
 
   // Consultas en paralelo
   const [
@@ -104,15 +103,16 @@ export default async function AdminDashboardPage() {
 
       {/* Próximos cumpleaños */}
       {perfilesCumples && perfilesCumples.length > 0 && (() => {
-        const hoyDate = new Date();
+        const [hY, hM, hD] = hoy.split("-").map(Number);
+        const hoyUtc = Date.UTC(hY, hM - 1, hD);
         const sorted = [...perfilesCumples]
           .map((p) => {
-            const nacimiento = parseISO(p.fecha_nacimiento!);
-            let proximoCumple = new Date(hoyDate.getFullYear(), nacimiento.getMonth(), nacimiento.getDate());
-            if (isBefore(proximoCumple, hoyDate) || differenceInDays(proximoCumple, hoyDate) === 0) {
-              proximoCumple = new Date(hoyDate.getFullYear() + 1, nacimiento.getMonth(), nacimiento.getDate());
-            }
-            const diasRestantes = differenceInDays(proximoCumple, hoyDate);
+            const [, nM, nD] = p.fecha_nacimiento!.split("-").map(Number);
+            let cumpleY = hY;
+            if (nM < hM || (nM === hM && nD < hD)) cumpleY = hY + 1;
+            const cumpleUtc = Date.UTC(cumpleY, nM - 1, nD);
+            const diasRestantes = Math.round((cumpleUtc - hoyUtc) / 86_400_000);
+            const proximoCumple = `${cumpleY}-${String(nM).padStart(2, "0")}-${String(nD).padStart(2, "0")}`;
             return { ...p, proximoCumple, diasRestantes };
           })
           .sort((a, b) => a.diasRestantes - b.diasRestantes)
@@ -139,7 +139,7 @@ export default async function AdminDashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">
-                      {format(p.proximoCumple, "d MMM", { locale: es })}
+                      {formatFechaColombia(p.proximoCumple, "d MMM")}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {p.diasRestantes === 0 ? "¡Hoy!" : `en ${p.diasRestantes} día${p.diasRestantes !== 1 ? "s" : ""}`}
@@ -176,7 +176,7 @@ export default async function AdminDashboardPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-warning font-medium">
-                    Vence {format(parseISO(m.fecha_fin), "d MMM", { locale: es })}
+                    Vence {formatFechaColombia(m.fecha_fin, "d MMM")}
                   </p>
                   <p className="text-xs text-muted-foreground capitalize">
                     {m.tipo_plan}
@@ -206,7 +206,7 @@ export default async function AdminDashboardPage() {
                   <p className="text-xs text-muted-foreground">{u.email}</p>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {format(parseISO(u.created_at), "d MMM yyyy", { locale: es })}
+                  {formatFechaColombia(u.created_at, "d MMM yyyy")}
                 </p>
               </Link>
             ))}

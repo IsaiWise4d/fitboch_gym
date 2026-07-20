@@ -1,5 +1,5 @@
-import { differenceInDays, format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+import { differenceInDays, parseISO } from "date-fns";
+import { getHoyColombia, formatFechaColombia } from "@/lib/utils/fecha";
 import type { EstadoMembresia } from "@/types/app";
 
 export function calcularEstadoMembresia(fechaFin: string): {
@@ -7,10 +7,10 @@ export function calcularEstadoMembresia(fechaFin: string): {
   diasRestantes: number;
   fechaFormateada: string;
 } {
-  const hoy = new Date();
+  const hoy = parseISO(getHoyColombia());
   const fin = parseISO(fechaFin);
   const diasRestantes = differenceInDays(fin, hoy);
-  const fechaFormateada = format(fin, "d 'de' MMMM, yyyy", { locale: es });
+  const fechaFormateada = formatFechaColombia(fechaFin, "d 'de' MMMM, yyyy");
 
   let estado: EstadoMembresia;
   if (diasRestantes < 0) {

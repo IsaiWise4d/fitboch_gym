@@ -1,4 +1,5 @@
 import { Profile } from "@/types/app";
+import { calcularEdad } from "@/lib/utils/fecha";
 
 interface PromptNutricionParams {
   profile: Profile;
@@ -16,7 +17,7 @@ export function construirPromptNutricional({
   restricciones,
 }: PromptNutricionParams): string {
   const edadStr = profile.fecha_nacimiento
-    ? `${new Date().getFullYear() - new Date(profile.fecha_nacimiento).getFullYear()}`
+    ? `${calcularEdad(profile.fecha_nacimiento)}`
     : "No especificada";
   const sexo = profile.genero || "No especificado";
   const esMujer = profile.genero === "femenino";

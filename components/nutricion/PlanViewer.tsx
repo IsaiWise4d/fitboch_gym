@@ -1,7 +1,6 @@
 import type { PlanNutricional } from "@/types/app";
-import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
 import { Calendar, Apple } from "lucide-react";
+import { formatFechaColombia } from "@/lib/utils/fecha";
 import { DescargaPDFNutricion } from "./DescargaPDFNutricion";
 import { RutinaMarkdown } from "@/components/rutina/RutinaMarkdown";
 
@@ -10,9 +9,7 @@ interface PlanViewerProps {
 }
 
 export function PlanViewer({ plan }: PlanViewerProps) {
-  const fechaGenerada = format(parseISO(plan.created_at), "d 'de' MMMM, yyyy", {
-    locale: es,
-  });
+  const fechaGenerada = formatFechaColombia(plan.created_at, "d 'de' MMMM, yyyy");
 
   return (
     <div className="space-y-4">

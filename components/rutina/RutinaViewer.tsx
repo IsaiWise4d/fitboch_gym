@@ -1,7 +1,6 @@
 import type { Rutina } from "@/types/app";
-import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
 import { Calendar, FileText } from "lucide-react";
+import { formatFechaColombia } from "@/lib/utils/fecha";
 import { DescargaPDF } from "./DescargaPDF";
 import { RutinaMarkdown } from "./RutinaMarkdown";
 
@@ -10,9 +9,7 @@ interface RutinaViewerProps {
 }
 
 export function RutinaViewer({ rutina }: RutinaViewerProps) {
-  const fechaGenerada = format(parseISO(rutina.created_at), "d 'de' MMMM, yyyy", {
-    locale: es,
-  });
+  const fechaGenerada = formatFechaColombia(rutina.created_at, "d 'de' MMMM, yyyy");
 
   const duracionLabel: Record<string, string> = {
     "3_meses": "3 Meses",

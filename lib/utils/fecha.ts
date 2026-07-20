@@ -1,7 +1,12 @@
-import { differenceInYears, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 
 export function calcularEdad(fechaNacimiento: string): number {
-  return differenceInYears(new Date(), parseISO(fechaNacimiento));
+  const [hY, hM, hD] = getHoyColombia().split("-").map(Number);
+  const [nY, nM, nD] = fechaNacimiento.split("-").map(Number);
+  let edad = hY - nY;
+  if (hM < nM || (hM === nM && hD < nD)) edad -= 1;
+  return edad;
 }
 
 export function getHoyColombia(): string {
@@ -23,4 +28,19 @@ export function getRangoDiaColombiaUTC(fechaBase: Date = new Date()) {
     inicioUtcIso: inicioUtc.toISOString(),
     finUtcIso: finUtc.toISOString(),
   };
+}
+
+export function formatFechaColombia(
+  fecha: string | Date,
+  pattern: string
+): string {
+  let d: Date;
+  if (typeof fecha === "string" && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    d = new Date(`${fecha}T12:00:00Z`);
+  } else if (typeof fecha === "string") {
+    d = parseISO(fecha);
+  } else {
+    d = fecha;
+  }
+  return format(d, pattern, { locale: es });
 }
