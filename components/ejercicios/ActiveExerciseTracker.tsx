@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Save, X, Dumbbell, Timer, AlertTriangle, Loader2, Trophy } from "lucide-react";
 import type { Ejercicio } from "@/types/app";
+import type { EstadoRacha } from "@/lib/racha/types";
 
 interface Serie {
   peso: number;
@@ -194,8 +195,42 @@ export function ActiveExerciseTracker() {
       });
 
       await loadPrEjercicio(state.ejercicio_id);
-      
+
       window.dispatchEvent(new Event('exercise-saved'));
+
+      // Avisar al widget de racha para que evalúe si este registro la
+      // "activó" (incrementa). El Route Handler /api/racha/activar es
+      // idempotente: solo activa si es el primer ejercicio del día exigible.
+      // Enviamos el historialId para que el server excluya este registro del
+      // recuento de "ejercicios anteriores hoy" y no se cuente a sí mismo.
+      // Si activada, despachamos 'streak-activated' (con el estado nuevo)
+      // para que el widget reproduzca la animación; si no, despachamos un
+      // 'exercise-saved' con detail.estado para que el widget refresque el
+      // número (caso 2º ejercicio del día: no anima, pero actualiza UI).
+      try {
+        const res = await fetch("/api/racha/activar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ historialId: historialData.id }),
+        });
+        if (res.ok) {
+          const json = (await res.json()) as {
+            activada?: boolean;
+            estado?: EstadoRacha;
+          };
+          if (json.activada && json.estado) {
+            window.dispatchEvent(
+              new CustomEvent("streak-activated", { detail: { estado: json.estado } })
+            );
+          } else if (json.estado) {
+            window.dispatchEvent(
+              new CustomEvent("exercise-saved", { detail: { estado: json.estado } })
+            );
+          }
+        }
+      } catch (e) {
+        console.error("Error notificando racha:", e);
+      }
 
     } catch (error) {
       console.error("Error saving exercise:", error);

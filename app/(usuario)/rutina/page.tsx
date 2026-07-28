@@ -24,6 +24,8 @@ export default async function RutinaPage() {
         .select("*")
         .eq("usuario_id", user.id)
         .eq("estado", "activa")
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
       supabase
         .from("membresias")

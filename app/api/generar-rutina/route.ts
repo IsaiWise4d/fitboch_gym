@@ -52,12 +52,23 @@ export async function POST(request: Request) {
     }
 
     // 3. Verificar que no tenga ya una rutina activa
-    const { data: rutinaExistente } = await supabase
+    //    (usamos limit(1) + maybeSingle para que nunca lance aunque haya duplicados)
+    const { data: rutinaExistente, error: rutinaQueryError } = await supabase
       .from("rutinas")
       .select("id")
       .eq("usuario_id", user.id)
       .eq("estado", "activa")
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
+
+    if (rutinaQueryError) {
+      console.error("Error consultando rutina existente:", rutinaQueryError);
+      return NextResponse.json(
+        { error: "Error al verificar rutinas previas" },
+        { status: 500 }
+      );
+    }
 
     if (rutinaExistente) {
       return NextResponse.json(
@@ -109,13 +120,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // 7. Guardar en Supabase
+    // 7. Guardar en Supabase (estado explícito por seguridad)
     const { error: insertError } = await supabase.from("rutinas").insert({
       usuario_id: user.id,
       membresia_id: membresia.id,
       datos_input: datosUsuario as unknown as Json,
       texto_rutina: textoRutina,
       duracion_plan: "3_meses",
+      estado: "activa",
       modelo_ia: modelo,
       tokens_usados: tokensUsados,
     });
@@ -128,11 +140,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // 8. Deshabilitar la renovación
-    await supabase
+    // 8. Deshabilitar la renovación (verificamos el resultado)
+    const { error: updateRenovError } = await supabase
       .from("membresias")
       .update({ renovacion_habilitada: false })
       .eq("id", membresia.id);
+
+    if (updateRenovError) {
+      console.error("Error deshabilitando renovación:", updateRenovError);
+    }
 
     return NextResponse.json({ success: true, rutina: textoRutina });
   } catch (error) {

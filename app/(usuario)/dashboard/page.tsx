@@ -9,6 +9,7 @@ import { ActiveExerciseTracker } from "@/components/ejercicios/ActiveExerciseTra
 import { RecentExercisesList } from "@/components/ejercicios/RecentExercisesList";
 import { pickPhrase } from "@/lib/server/motivation";
 import { InicioFrase } from "@/components/dashboard/InicioFrase";
+import { StreakWidget } from "@/components/dashboard/StreakWidget";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -36,6 +37,8 @@ export default async function DashboardPage() {
       .select("id, estado, texto_rutina")
       .eq("usuario_id", user.id)
       .eq("estado", "activa")
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle(),
   ]);
 
@@ -77,6 +80,9 @@ export default async function DashboardPage() {
           </div>
         </Link>
       )}
+
+      {/* Widget de racha (streak) */}
+      <StreakWidget userId={user.id} />
 
       {/* Card de membresía */}
       <MembresiaCard membresia={membresia} />

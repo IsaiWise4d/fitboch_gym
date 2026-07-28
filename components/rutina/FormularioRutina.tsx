@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -226,7 +226,10 @@ export function FormularioRutina({ profile }: { profile: Profile }) {
         return;
       }
 
+      // Forzamos el refetch del Server Component y navegamos para que la
+      // página re-lea la rutina y muestre el viewer en lugar del formulario.
       router.refresh();
+      router.push("/rutina");
     } catch {
       setError("Error de conexión. Intenta de nuevo.");
       setGenerating(false);
