@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { History, Dumbbell, Trash2 } from "lucide-react";
 import { getRangoDiaColombiaUTC } from "@/lib/utils/fecha";
+import type { EstadoRacha } from "@/lib/racha/types";
 
 interface SerieEjercicio {
   serie_numero: number;
@@ -99,6 +100,19 @@ export function RecentExercisesList() {
       alert("Error al borrar: " + error.message);
     } else {
       loadHistorial();
+      try {
+        const estadoResponse = await fetch("/api/racha/estado", { cache: "no-store" });
+        if (estadoResponse.ok) {
+          const json = (await estadoResponse.json()) as { estado?: EstadoRacha };
+          if (json.estado) {
+            window.dispatchEvent(
+              new CustomEvent("exercise-saved", { detail: { estado: json.estado } })
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error actualizando racha tras borrar ejercicio:", error);
+      }
     }
     setExerciseToDelete(null);
   };

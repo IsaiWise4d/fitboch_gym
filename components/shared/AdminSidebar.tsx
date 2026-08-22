@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Dumbbell, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, Dumbbell, Flame, LogOut, Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const sidebarItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users },
   { href: "/admin/ejercicios", label: "Ejercicios", icon: Dumbbell },
+  { href: "/admin/calentamientos", label: "Calentamientos", icon: Flame },
 ];
 
 export function AdminSidebar() {

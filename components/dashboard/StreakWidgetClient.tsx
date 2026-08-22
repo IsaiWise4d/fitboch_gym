@@ -69,6 +69,7 @@ export function StreakWidgetClient({ initialState }: Props) {
   const { currentCount, enRiesgo, hoyActivado } = estado;
 
   const mensaje = (() => {
+    if (estado.esDomingo) return "Hoy es descanso; tu racha descansa";
     if (currentCount === 0) return "Registra hoy para empezar tu racha";
     if (hoyActivado) return "¡Racha activa hoy! Vuelve mañana";
     return `${currentCount} día${currentCount === 1 ? "" : "s"} seguido${currentCount === 1 ? "" : "s"}`;

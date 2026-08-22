@@ -2,6 +2,8 @@
 // Supabase. No escriben nada: la racha se calcula al vuelo (lazy evaluation)
 // a partir de historial_ejercicios.
 
+import "server-only";
+
 import { createClient } from "@/lib/supabase/server";
 import { getHoyColombia, getRangoDiaColombiaUTC } from "@/lib/utils/fecha";
 import {
@@ -9,6 +11,7 @@ import {
   calcularMejorRacha,
   construirCalendarioActivaciones,
   esDiaExigible,
+  FECHA_INICIO_RACHA,
 } from "./reglas";
 import {
   diaSemanaBogota,
@@ -19,7 +22,7 @@ import {
 } from "./bogota";
 import type { CalendarioRachaDia, EstadoRacha, ResumenRacha } from "./types";
 
-const DIAS_HISTORIA_RACHA = 120; // ~4 meses son suficientes para la racha actual.
+const DIAS_HISTORIA_RACHA = 400; // Alineado con el máximo recorrido por la lógica.
 const DIAS_HISTORIA_MEJOR = 800; // para la "mejor racha" histórica.
 
 async function leerFechasEjercicio(
@@ -27,10 +30,18 @@ async function leerFechasEjercicio(
   dias: number
 ): Promise<string[]> {
   const supabase = await createClient();
-  const desde = new Date();
-  // UTC ISO de hace `dias` atrás. Es sólo un filtro grueso; el cálculo de
-  // día Bogotá se hace en el cliente con cada fecha_completado real.
-  desde.setUTCDate(desde.getUTCDate() - dias);
+  // Filtro grueso: hace `dias` atrás (limite móvil original).
+  const desdeLimiteMovil = new Date();
+  desdeLimiteMovil.setUTCDate(desdeLimiteMovil.getUTCDate() - dias);
+  // Fecha de corte de la racha (medianoche Bogotá = 05:00Z de esa fecha).
+  // Ejercicios anteriores a esta fecha NO cuentan para la racha, aunque se
+  // conservan en historial_ejercicios para PRs e historial.
+  const desdeCorteRacha = new Date(`${FECHA_INICIO_RACHA}T05:00:00.000Z`);
+  // Usar el más reciente de los dos: nunca consultar antes del corte.
+  const desde =
+    desdeCorteRacha.getTime() > desdeLimiteMovil.getTime()
+      ? desdeCorteRacha
+      : desdeLimiteMovil;
   const { data, error } = await supabase
     .from("historial_ejercicios")
     .select("fecha_completado")
@@ -76,7 +87,7 @@ export async function getResumenRacha(
   )}`;
   let diasActivosMes = 0;
   for (const f of activados) {
-    if (f.startsWith(prefijo)) diasActivosMes += 1;
+    if (f.startsWith(prefijo) && esDiaExigible(stringAFecha(f))) diasActivosMes += 1;
   }
 
   return {
@@ -125,6 +136,57 @@ export async function getCalendarioMes(
     cursor = sumarDias(cursor, 1);
   }
   return dias;
+}
+
+/**
+ * Carga en una sola consulta los datos de la página de racha. Evita que el
+ * resumen y el calendario lean dos veces el mismo historial.
+ */
+export async function getDatosPaginaRacha(
+  userId: string,
+  year: number,
+  month: number
+): Promise<{ resumen: ResumenRacha; dias: CalendarioRachaDia[] }> {
+  const fechas = await leerFechasEjercicio(userId, DIAS_HISTORIA_MEJOR);
+  const activados = construirCalendarioActivaciones(fechas);
+  const estado = calcularRacha(activados, getHoyColombia());
+  const prefijo = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
+  const diasActivosMes = [...activados].filter(
+    (fecha) => fecha.startsWith(prefijo) && esDiaExigible(stringAFecha(fecha))
+  ).length;
+
+  const primero = new Date(Date.UTC(year, month - 1, 1, 5, 0, 0, 0));
+  const diaInicio = diaSemanaBogota(primero);
+  const columnaInicio = diaInicio === 0 ? 6 : diaInicio - 1;
+  const inicioGrilla = sumarDias(primero, -columnaInicio);
+  const hoyStr = hoyBogotaString();
+  const dias: CalendarioRachaDia[] = [];
+  let cursor = inicioGrilla;
+
+  for (let i = 0; i < 42; i++) {
+    const fecha = fechaAString(cursor);
+    const fueraDeMes =
+      cursor.getUTCMonth() + 1 !== month || cursor.getUTCFullYear() !== year;
+    const exigible = esDiaExigible(cursor);
+    dias.push({
+      fecha,
+      dia: cursor.getUTCDate(),
+      exigible,
+      activado: !fueraDeMes && exigible && activados.has(fecha),
+      esHoy: fecha === hoyStr,
+      fueraDeMes,
+    });
+    cursor = sumarDias(cursor, 1);
+  }
+
+  return {
+    resumen: {
+      currentCount: estado.currentCount,
+      mejorRacha: calcularMejorRacha(activados),
+      diasActivosMes,
+    },
+    dias,
+  };
 }
 
 /**

@@ -16,10 +16,11 @@
 // - Regla del domingo: el contador de fallados consecutivos se reinicia
 //   cada domingo (el domingo "interrumpe" la cadena de fallos). Si el
 //   usuario falla sábado y luego lunes (con domingo en medio), NO se
-//   consideran 2 fallos consecutivos.
-//
-// ⚠️ La regla del domingo está aislada en `shouldResetStreak()` para que
-// Adriel pueda ajustarla fácilmente si la interpretación no es correcta.
+//   consideran 2 fallos consecutivos. Regla confirmada por Adriel.
+// - Fecha de corte: la racha solo considera ejercicios con
+//   fecha_completado >= FECHA_INICIO_RACHA (Bogotá). Los ejercicios
+//   anteriores se ignoran para la racha pero se conservan en
+//   historial_ejercicios para PRs e historial.
 
 import type { EstadoRacha } from "./types";
 import {
@@ -32,6 +33,18 @@ import {
 
 /** Domingo = 0 en getUTCDay. */
 export const DOMINGO = 0;
+
+/**
+ * Fecha de corte (Bogotá, "YYYY-MM-DD") desde cuando la racha empieza a
+ * contar para TODOS los usuarios. Ejercicios con fecha_completado anterior
+ * a esta fecha son ignorados por el cálculo de racha (no se borran: siguen
+ * disponibles para PRs e historial de ejercicios).
+ *
+ * El filtrado real ocurre en lib/racha/server.ts (leerFechasEjercicio),
+ * que acota la consulta a Supabase con gte(fecha_completado, corte).
+ * La lógica pura de este archivo recibe el Set ya filtrado.
+ */
+export const FECHA_INICIO_RACHA = "2026-08-18";
 
 /** Máximo de días hacia atrás que recorre el cálculo (salvaguarda). */
 const MAX_DIAS_BACK = 400;
@@ -70,13 +83,13 @@ export function construirCalendarioActivaciones(
 }
 
 /**
- * ⚠️ REGLA DEL DOMINGO — función aislada para facilidad de ajuste.
+ * REGLA DEL DOMINGO — función aislada para facilidad de ajuste.
  *
  * Determina si la racha debe resetearse a 0 dado el número actual de días
  * exigibles fallados de forma consecutiva (sin ejercicio) DENTRO de la
  * misma semana laboral (lun-sáb).
  *
- * Interpretación implementada (a confirmar con Adriel):
+ * Interpretación confirmada por Adriel:
  *   La racha SOLO se resetea si se acumulan 2 fallos exigibles consecutivos
  *   dentro de la MISMA semana laboral (lun-sáb) sin que un domingo se
  *   interponga. Si un domingo se interpone, el llamador (`calcularRacha`)
@@ -86,10 +99,6 @@ export function construirCalendarioActivaciones(
  *
  *   Por ejemplo: fallar sábado y luego el lunes siguiente NO rompe la
  *   racha, porque el domingo queda entre ambos.
- *
- * Si Adriel confirma una interpretación distinta (p.ej. "2 fallos en
- * cualquier momento, sin importar domingos"), basta con cambiar el cuerpo
- * de esta función. El resto del cálculo se apoya aquí.
  */
 export function shouldResetStreak(consecutiveMissed: number): boolean {
   return consecutiveMissed >= 2;
@@ -203,6 +212,7 @@ function buildEstado(
   todayPending: boolean
 ): EstadoRacha {
   const hoyActivado = state.lastActivatedDate === hoyStr;
+  const esDomingoHoy = diaSemanaBogota(stringAFecha(hoyStr)) === DOMINGO;
 
   // "En riesgo": HOY es exigible y todavía no se registró ejercicio, hay al
   // menos 1 día exigible fallado en el MISMO bloque semanal que hoy (sin
@@ -217,6 +227,7 @@ function buildEstado(
     lastActivatedDate: state.lastActivatedDate,
     diasFalladosConsecutivos: state.consecutiveMissed,
     hoyActivado,
+    esDomingo: esDomingoHoy,
     enRiesgo,
     rota: state.rota,
   };

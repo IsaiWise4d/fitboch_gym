@@ -12,6 +12,7 @@ export async function StreakWidget({ userId }: { userId: string }) {
     lastActivatedDate: null,
     diasFalladosConsecutivos: 0,
     hoyActivado: false,
+    esDomingo: false,
     enRiesgo: false,
     rota: false,
   };

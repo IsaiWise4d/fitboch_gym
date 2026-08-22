@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getHoyColombia } from "@/lib/utils/fecha";
 import { MembresiaCard } from "@/components/dashboard/MembresiaCard";
 import { RutinaDiaria } from "@/components/dashboard/RutinaDiaria";
-import { Bell } from "lucide-react";
+import { Bell, Flame } from "lucide-react";
 import Link from "next/link";
 import { ActiveExerciseTracker } from "@/components/ejercicios/ActiveExerciseTracker";
 import { RecentExercisesList } from "@/components/ejercicios/RecentExercisesList";
@@ -83,6 +83,17 @@ export default async function DashboardPage() {
 
       {/* Widget de racha (streak) */}
       <StreakWidget userId={user.id} />
+
+      <Link
+        href="/calentamientos"
+        className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 p-4 transition-colors hover:bg-primary/15"
+      >
+        <Flame className="h-5 w-5 text-primary" />
+        <div>
+          <p className="text-sm font-medium text-primary">Calentamientos</p>
+          <p className="text-xs text-muted-foreground">Prepara tu cuerpo antes de entrenar</p>
+        </div>
+      </Link>
 
       {/* Card de membresía */}
       <MembresiaCard membresia={membresia} />

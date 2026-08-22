@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { getCalendarioMes, getResumenRacha } from "@/lib/racha/server";
+import { getDatosPaginaRacha } from "@/lib/racha/server";
 import { CalendarioRacha } from "@/components/racha/CalendarioRacha";
 import { Flame, Trophy, CalendarDays } from "lucide-react";
 import type { CalendarioRachaDia, ResumenRacha } from "@/lib/racha/types";
@@ -51,10 +51,7 @@ export default async function RachaPage({
   const params = await searchParams;
   const { year, month, currentYear, currentMonth } = parseYearMonth(params);
 
-  const [resumen, dias] = await Promise.all([
-    getResumenRacha(user.id, year, month),
-    getCalendarioMes(user.id, year, month),
-  ]);
+  const { resumen, dias } = await getDatosPaginaRacha(user.id, year, month);
 
   const vacio: ResumenRacha = {
     currentCount: 0,

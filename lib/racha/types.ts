@@ -13,6 +13,8 @@ export interface EstadoRacha {
   diasFalladosConsecutivos: number;
   /** true si el usuario ya registró ejercicio hoy (Bogotá). */
   hoyActivado: boolean;
+  /** true cuando hoy es domingo en Bogotá; es un día de descanso. */
+  esDomingo: boolean;
   /** true si la racha está en riesgo (1 fallado + aún existe día exigible por venir). */
   enRiesgo: boolean;
   /** true si la racha está rota (currentCount === 0 por 2 fallados consecutivos). */

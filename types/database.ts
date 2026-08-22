@@ -212,6 +212,48 @@ export interface Database {
         };
         Relationships: [];
       };
+      calentamientos: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          nombre: string;
+          descripcion: string | null;
+          instrucciones: string;
+          categoria: "tren_superior" | "tren_inferior";
+          nivel: "principiante" | "intermedio" | "avanzado" | "todos";
+          imagen_url: string | null;
+          video_url: string | null;
+          activo: boolean;
+        };
+        Insert: {
+          nombre: string;
+          instrucciones: string;
+          categoria: "tren_superior" | "tren_inferior";
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          descripcion?: string | null;
+          nivel?: "principiante" | "intermedio" | "avanzado" | "todos";
+          imagen_url?: string | null;
+          video_url?: string | null;
+          activo?: boolean;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          nombre?: string;
+          descripcion?: string | null;
+          instrucciones?: string;
+          categoria?: "tren_superior" | "tren_inferior";
+          nivel?: "principiante" | "intermedio" | "avanzado" | "todos";
+          imagen_url?: string | null;
+          video_url?: string | null;
+          activo?: boolean;
+        };
+        Relationships: [];
+      };
       logs_acceso: {
         Row: {
           id: string;
