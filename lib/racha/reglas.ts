@@ -44,7 +44,7 @@ export const DOMINGO = 0;
  * que acota la consulta a Supabase con gte(fecha_completado, corte).
  * La lógica pura de este archivo recibe el Set ya filtrado.
  */
-export const FECHA_INICIO_RACHA = "2026-08-18";
+export const FECHA_INICIO_RACHA = "2026-08-23";
 
 /** Máximo de días hacia atrás que recorre el cálculo (salvaguarda). */
 const MAX_DIAS_BACK = 400;
