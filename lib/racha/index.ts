@@ -8,6 +8,8 @@ export * from "./bogota";
 export * from "./reglas";
 export {
   getEstadoRacha,
+  getEstadosRachaUsuarios,
+  getResumenAdminRacha,
   getResumenRacha,
   getCalendarioMes,
   evaluarActivacionRacha,

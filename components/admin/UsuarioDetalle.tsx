@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Calendar,
   Dumbbell,
+  Flame,
   Loader2,
   RefreshCw,
   Sparkles,
@@ -23,6 +24,7 @@ import {
 import { format, parseISO, addMonths, addDays, isBefore, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Profile, Membresia, PlanNutricional } from "@/types/app";
+import type { ResumenAdminRacha } from "@/lib/racha/types";
 
 const RutinaEditor = dynamic(() => import("@/components/admin/RutinaEditor"), {
   ssr: false,
@@ -47,6 +49,7 @@ interface Props {
   membresias: Membresia[];
   rutinas: RutinaResumen[];
   planesNutricionales: PlanNutricional[];
+  racha?: ResumenAdminRacha | null;
 }
 
 const PLAN_MESES: Record<string, number> = {
@@ -56,7 +59,29 @@ const PLAN_MESES: Record<string, number> = {
   anual: 12,
 };
 
-export function UsuarioDetalle({ profile, membresias, rutinas, planesNutricionales }: Props) {
+/** Etiqueta y color del estado de la racha para la tarjeta del detalle. */
+function metaEstadoRacha(
+  racha: ResumenAdminRacha
+): { label: string; clase: string } {
+  const { estado } = racha;
+  if (estado.rota) return { label: "Rota", clase: "bg-error/20 text-error" };
+  if (estado.enRiesgo)
+    return { label: "En riesgo", clase: "bg-warning/20 text-warning" };
+  if (estado.hoyActivado)
+    return { label: "Hoy activada", clase: "bg-success/20 text-success" };
+  if (estado.esDomingo)
+    return { label: "Descanso (domingo)", clase: "bg-white/10 text-muted-foreground" };
+  return { label: "Pendiente hoy", clase: "bg-white/10 text-muted-foreground" };
+}
+
+/** Color de la cifra de racha actual según su estado. */
+function colorRachaActual(racha: ResumenAdminRacha): string {
+  if (racha.estado.enRiesgo) return "text-warning";
+  if (racha.estado.currentCount > 0) return "text-orange-400";
+  return "text-muted-foreground";
+}
+
+export function UsuarioDetalle({ profile, membresias, rutinas, planesNutricionales, racha }: Props) {
   const router = useRouter();
   const [showRenovar, setShowRenovar] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
@@ -355,6 +380,52 @@ export function UsuarioDetalle({ profile, membresias, rutinas, planesNutricional
           </div>
         </div>
       </div>
+
+      {/* Racha */}
+      {racha && (
+        <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Flame
+                className={`h-4 w-4 text-primary ${
+                  racha.estado.hoyActivado ? "flame-pulse" : ""
+                }`}
+              />
+              Racha de entrenamiento
+            </div>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${metaEstadoRacha(racha).clase}`}
+            >
+              {metaEstadoRacha(racha).label}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Racha actual</p>
+              <p
+                className={`flex items-center gap-1 font-semibold ${colorRachaActual(racha)}`}
+              >
+                <Flame className={`h-4 w-4 ${colorRachaActual(racha)}`} />
+                {racha.estado.currentCount}{" "}
+                {racha.estado.currentCount === 1 ? "día" : "días"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Mejor racha</p>
+              <p>
+                {racha.mejorRacha} {racha.mejorRacha === 1 ? "día" : "días"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Activos este mes</p>
+              <p>
+                {racha.diasActivosMes}{" "}
+                {racha.diasActivosMes === 1 ? "día" : "días"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Membresía actual */}
       <div className="rounded-lg border border-border bg-surface p-4 space-y-3">

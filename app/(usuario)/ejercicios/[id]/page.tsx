@@ -3,6 +3,16 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ExerciseHistoryLog } from "@/components/ejercicios/ExerciseHistoryLog";
+import { MediaPreview } from "@/components/calentamientos/MediaPreview";
+
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  return match ? match[1] : null;
+}
+
+function esVideoDirecto(url: string): boolean {
+  return /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(url);
+}
 
 export default async function EjercicioDetallePage({
   params,
@@ -28,6 +38,9 @@ export default async function EjercicioDetallePage({
   if (!ejercicio) {
     notFound();
   }
+
+  const videoUrl = ejercicio.video_url;
+  const youTubeId = videoUrl ? getYouTubeId(videoUrl) : null;
 
   return (
     <div className="p-4 space-y-6">
@@ -92,17 +105,23 @@ export default async function EjercicioDetallePage({
         </div>
       </div>
 
-      {/* Video */}
-      {ejercicio.video_url && (
+      {/* Video: se muestra como GIF (en bucle, silenciado y sin controles) */}
+      {videoUrl && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium text-muted-foreground">Video</h2>
-          <div className="aspect-video rounded-xl overflow-hidden border border-border">
-            <iframe
-              src={ejercicio.video_url}
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+            {esVideoDirecto(videoUrl) ? (
+              <MediaPreview url={videoUrl} tipo="video" alt={ejercicio.nombre} className="max-h-[480px] w-full object-contain" />
+            ) : youTubeId ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=1&loop=1&playlist=${youTubeId}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1`}
+                className="aspect-video w-full"
+                allow="autoplay; encrypted-media"
+                title={ejercicio.nombre}
+              />
+            ) : (
+              <iframe src={videoUrl} className="aspect-video w-full" allowFullScreen title={ejercicio.nombre} />
+            )}
           </div>
         </div>
       )}

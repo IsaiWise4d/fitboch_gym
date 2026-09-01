@@ -44,3 +44,14 @@ export interface ResumenRacha {
   mejorRacha: number;
   diasActivosMes: number;
 }
+
+/**
+ * Resumen de racha para la vista de detalle del usuario en el panel admin:
+ * estado actual + mejor racha histórica + días activos del mes en curso
+ * (Bogotá). Calculado en una sola consulta de historial.
+ */
+export interface ResumenAdminRacha {
+  estado: EstadoRacha;
+  mejorRacha: number;
+  diasActivosMes: number;
+}

@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { UsuarioDetalle } from "@/components/admin/UsuarioDetalle";
+import { getResumenAdminRacha } from "@/lib/racha/server";
+import type { ResumenAdminRacha } from "@/lib/racha/types";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -15,7 +17,7 @@ export default async function UsuarioDetallePage({ params }: Props) {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: membresias }, { data: rutinas }, { data: planes }] =
+  const [{ data: profile }, { data: membresias }, { data: rutinas }, { data: planes }, resumenRacha] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", id).single(),
       supabase
@@ -33,6 +35,10 @@ export default async function UsuarioDetallePage({ params }: Props) {
         .select("*")
         .eq("user_id", id)
         .order("created_at", { ascending: false }),
+      getResumenAdminRacha(id).catch((e: unknown) => {
+        console.error("Error cargando racha del usuario:", e);
+        return null as ResumenAdminRacha | null;
+      }),
     ]);
 
   if (!profile) notFound();
@@ -43,6 +49,7 @@ export default async function UsuarioDetallePage({ params }: Props) {
       membresias={membresias ?? []}
       rutinas={rutinas ?? []}
       planesNutricionales={planes ?? []}
+      racha={resumenRacha}
     />
   );
 }

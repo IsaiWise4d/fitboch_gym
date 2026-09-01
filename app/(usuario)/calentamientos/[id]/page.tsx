@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { MediaPreview } from "@/components/calentamientos/MediaPreview";
 
 export default async function CalentamientoDetallePage({
   params,
@@ -21,6 +22,9 @@ export default async function CalentamientoDetallePage({
     .single();
   if (!calentamiento) notFound();
 
+  const mediaUrl = calentamiento.media_url ?? calentamiento.imagen_url;
+  const mediaTipo = calentamiento.media_url ? calentamiento.media_tipo : calentamiento.imagen_url ? "imagen" : null;
+
   return (
     <div className="space-y-6 p-4">
       <div className="flex items-center gap-3">
@@ -29,10 +33,10 @@ export default async function CalentamientoDetallePage({
         </Link>
         <h1 className="text-xl font-bold">{calentamiento.nombre}</h1>
       </div>
-      {calentamiento.imagen_url && (
+      {mediaUrl && (
         <div className="flex justify-center">
-          <div className="w-full max-w-md overflow-hidden rounded-xl border border-border">
-            <img src={calentamiento.imagen_url} alt={calentamiento.nombre} className="aspect-square w-full object-cover" />
+          <div className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface">
+            <MediaPreview url={mediaUrl} tipo={mediaTipo} alt={calentamiento.nombre} className="max-h-[480px] w-full object-contain" />
           </div>
         </div>
       )}
@@ -58,14 +62,6 @@ export default async function CalentamientoDetallePage({
           <p className="whitespace-pre-line text-sm leading-relaxed">{calentamiento.instrucciones}</p>
         </div>
       </div>
-      {calentamiento.video_url && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">Video</h2>
-          <div className="aspect-video overflow-hidden rounded-xl border border-border">
-            <iframe src={calentamiento.video_url} className="h-full w-full" allowFullScreen title={calentamiento.nombre} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

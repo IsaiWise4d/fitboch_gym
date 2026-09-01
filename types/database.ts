@@ -224,6 +224,8 @@ export interface Database {
           nivel: "principiante" | "intermedio" | "avanzado" | "todos";
           imagen_url: string | null;
           video_url: string | null;
+          media_url: string | null;
+          media_tipo: "imagen" | "video" | null;
           activo: boolean;
         };
         Insert: {
@@ -237,6 +239,8 @@ export interface Database {
           nivel?: "principiante" | "intermedio" | "avanzado" | "todos";
           imagen_url?: string | null;
           video_url?: string | null;
+          media_url?: string | null;
+          media_tipo?: "imagen" | "video" | null;
           activo?: boolean;
         };
         Update: {
@@ -250,6 +254,8 @@ export interface Database {
           nivel?: "principiante" | "intermedio" | "avanzado" | "todos";
           imagen_url?: string | null;
           video_url?: string | null;
+          media_url?: string | null;
+          media_tipo?: "imagen" | "video" | null;
           activo?: boolean;
         };
         Relationships: [];
@@ -408,8 +414,14 @@ export interface Database {
         ];
       };
     };
-    Views: {};
-    Functions: {};
-    Enums: {};
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
   };
 }

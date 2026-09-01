@@ -56,11 +56,14 @@ export async function POST(request: Request) {
     if (response) return response;
 
     const body = await request.json();
-    const { nombre, descripcion, instrucciones, categoria, nivel, imagen_url, video_url } = body;
+    const { nombre, descripcion, instrucciones, categoria, nivel, media_url, media_tipo } = body;
 
     if (!nombre?.trim() || !instrucciones?.trim() || !categoria || !CATEGORIAS.includes(categoria)) {
       return NextResponse.json({ error: "Nombre, instrucciones y categoría son obligatorios" }, { status: 400 });
     }
+
+    const mediaUrl = typeof media_url === "string" && media_url.trim() ? media_url.trim() : null;
+    const mediaTipo = mediaUrl ? (media_tipo === "video" ? "video" : "imagen") : null;
 
     const { error } = await supabase.from("calentamientos").insert({
       nombre: nombre.trim(),
@@ -68,8 +71,8 @@ export async function POST(request: Request) {
       instrucciones: instrucciones.trim(),
       categoria,
       nivel: nivel || "todos",
-      imagen_url: imagen_url?.trim() || null,
-      video_url: video_url?.trim() || null,
+      media_url: mediaUrl,
+      media_tipo: mediaTipo,
     });
 
     if (error) {
@@ -93,8 +96,18 @@ export async function PUT(request: Request) {
     const { id, ...fields } = body;
     if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
 
-    const allowedFields = ["nombre", "descripcion", "instrucciones", "categoria", "nivel", "imagen_url", "video_url", "activo"];
+    const allowedFields = ["nombre", "descripcion", "instrucciones", "categoria", "nivel", "media_url", "media_tipo", "activo"];
     const updates = Object.fromEntries(Object.entries(fields).filter(([key]) => allowedFields.includes(key)));
+
+    if (typeof updates.media_url === "string") {
+      const mediaUrl = updates.media_url.trim();
+      updates.media_url = mediaUrl || null;
+      if (!mediaUrl) updates.media_tipo = null;
+    }
+    if (updates.media_url && updates.media_tipo !== "video") {
+      updates.media_tipo = "imagen";
+    }
+
     updates.updated_at = new Date().toISOString();
 
     const { error } = await supabase.from("calentamientos").update(updates).eq("id", id);

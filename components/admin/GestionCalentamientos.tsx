@@ -6,6 +6,8 @@ import { ArrowLeft, Eye, EyeOff, Loader2, Pencil, Plus, Search, X } from "lucide
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MediaUploader } from "@/components/admin/MediaUploader";
+import { MediaPreview } from "@/components/calentamientos/MediaPreview";
 import type { Calentamiento } from "@/types/app";
 
 const CATEGORIAS = ["tren_superior", "tren_inferior"] as const;
@@ -20,8 +22,8 @@ type FormData = {
   instrucciones: string;
   categoria: Categoria;
   nivel: Nivel;
-  imagen_url: string;
-  video_url: string;
+  media_url: string;
+  media_tipo: "imagen" | "video" | null;
 };
 
 const emptyForm: FormData = {
@@ -30,12 +32,18 @@ const emptyForm: FormData = {
   instrucciones: "",
   categoria: "tren_superior",
   nivel: "todos",
-  imagen_url: "",
-  video_url: "",
+  media_url: "",
+  media_tipo: null,
 };
 
 function labelCategoria(categoria: string) {
   return categoria === "tren_superior" ? "Tren superior" : "Tren inferior";
+}
+
+function mediaDe(calentamiento: Calentamiento): { url: string; tipo: "imagen" | "video" | null } | null {
+  if (calentamiento.media_url) return { url: calentamiento.media_url, tipo: calentamiento.media_tipo };
+  if (calentamiento.imagen_url) return { url: calentamiento.imagen_url, tipo: "imagen" };
+  return null;
 }
 
 export function GestionCalentamientos({ calentamientos }: { calentamientos: Calentamiento[] }) {
@@ -76,8 +84,8 @@ export function GestionCalentamientos({ calentamientos }: { calentamientos: Cale
       instrucciones: calentamiento.instrucciones,
       categoria: calentamiento.categoria,
       nivel: calentamiento.nivel,
-      imagen_url: calentamiento.imagen_url ?? "",
-      video_url: calentamiento.video_url ?? "",
+      media_url: calentamiento.media_url ?? "",
+      media_tipo: calentamiento.media_tipo,
     });
     setEditando(true);
     setError(null);
@@ -166,10 +174,13 @@ export function GestionCalentamientos({ calentamientos }: { calentamientos: Cale
               <div className="space-y-2"><Label>Categoría *</Label><select value={form.categoria} onChange={(event) => setForm({ ...form, categoria: event.target.value as Categoria })} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"><option value="tren_superior">Tren superior</option><option value="tren_inferior">Tren inferior</option></select></div>
               <div className="space-y-2"><Label>Nivel</Label><select value={form.nivel} onChange={(event) => setForm({ ...form, nivel: event.target.value as Nivel })} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm">{NIVELES.map((nivel) => <option key={nivel} value={nivel}>{nivel.charAt(0).toUpperCase() + nivel.slice(1)}</option>)}</select></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>URL imagen o GIF</Label><Input value={form.imagen_url} onChange={(event) => setForm({ ...form, imagen_url: event.target.value })} placeholder="https://..." /></div>
-              <div className="space-y-2"><Label>URL video</Label><Input value={form.video_url} onChange={(event) => setForm({ ...form, video_url: event.target.value })} placeholder="https://..." /></div>
-            </div>
+            <MediaUploader
+              url={form.media_url}
+              tipo={form.media_tipo}
+              onChange={(media) =>
+                setForm({ ...form, media_url: media?.url ?? "", media_tipo: media?.tipo ?? null })
+              }
+            />
             {error && <div className="rounded-md bg-error/10 p-2 text-sm text-error">{error}</div>}
             <div className="flex gap-3 pt-2"><Button variant="outline" className="flex-1" onClick={() => setShowForm(false)} disabled={loading}>Cancelar</Button><Button className="flex-1" onClick={handleSubmit} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editando ? "Guardar cambios" : "Crear calentamiento"}</Button></div>
           </div>
@@ -178,15 +189,20 @@ export function GestionCalentamientos({ calentamientos }: { calentamientos: Cale
 
       <p className="text-xs text-muted-foreground">{filtrados.length} calentamiento{filtrados.length !== 1 ? "s" : ""}</p>
       <div className="divide-y divide-border rounded-lg border border-border bg-surface">
-        {filtrados.length === 0 ? <p className="p-4 text-center text-sm text-muted-foreground">No hay calentamientos</p> : filtrados.map((calentamiento) => (
-          <div key={calentamiento.id} className="flex items-center justify-between p-4">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              {calentamiento.imagen_url && <img src={calentamiento.imagen_url} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" />}
-              <div className="min-w-0"><p className={`truncate text-sm font-medium ${!calentamiento.activo ? "text-muted-foreground line-through" : ""}`}>{calentamiento.nombre}</p><p className="text-xs capitalize text-muted-foreground">{labelCategoria(calentamiento.categoria)} · {calentamiento.nivel}</p></div>
+        {filtrados.length === 0 ? <p className="p-4 text-center text-sm text-muted-foreground">No hay calentamientos</p> : filtrados.map((calentamiento) => {
+          const media = mediaDe(calentamiento);
+          return (
+            <div key={calentamiento.id} className="flex items-center justify-between p-4">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                {media && (
+                  <MediaPreview url={media.url} tipo={media.tipo} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" />
+                )}
+                <div className="min-w-0"><p className={`truncate text-sm font-medium ${!calentamiento.activo ? "text-muted-foreground line-through" : ""}`}>{calentamiento.nombre}</p><p className="text-xs capitalize text-muted-foreground">{labelCategoria(calentamiento.categoria)} · {calentamiento.nivel}</p></div>
+              </div>
+              <div className="ml-3 flex shrink-0 items-center gap-1"><button onClick={() => toggleActivo(calentamiento)} disabled={togglingId === calentamiento.id} className="rounded-md p-2 text-muted-foreground hover:bg-white/10" title={calentamiento.activo ? "Desactivar" : "Activar"}>{togglingId === calentamiento.id ? <Loader2 className="h-4 w-4 animate-spin" /> : calentamiento.activo ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</button><button onClick={() => handleEditar(calentamiento)} className="rounded-md p-2 text-muted-foreground hover:bg-white/10"><Pencil className="h-4 w-4" /></button></div>
             </div>
-            <div className="ml-3 flex shrink-0 items-center gap-1"><button onClick={() => toggleActivo(calentamiento)} disabled={togglingId === calentamiento.id} className="rounded-md p-2 text-muted-foreground hover:bg-white/10" title={calentamiento.activo ? "Desactivar" : "Activar"}>{togglingId === calentamiento.id ? <Loader2 className="h-4 w-4 animate-spin" /> : calentamiento.activo ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</button><button onClick={() => handleEditar(calentamiento)} className="rounded-md p-2 text-muted-foreground hover:bg-white/10"><Pencil className="h-4 w-4" /></button></div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

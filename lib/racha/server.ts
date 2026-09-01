@@ -20,7 +20,12 @@ import {
   sumarDias,
   hoyBogotaString,
 } from "./bogota";
-import type { CalendarioRachaDia, EstadoRacha, ResumenRacha } from "./types";
+import type {
+  CalendarioRachaDia,
+  EstadoRacha,
+  ResumenAdminRacha,
+  ResumenRacha,
+} from "./types";
 
 const DIAS_HISTORIA_RACHA = 400; // Alineado con el máximo recorrido por la lógica.
 const DIAS_HISTORIA_MEJOR = 800; // para la "mejor racha" histórica.
@@ -65,6 +70,88 @@ export async function getEstadoRacha(userId: string): Promise<EstadoRacha> {
   const fechas = await leerFechasEjercicio(userId, DIAS_HISTORIA_RACHA);
   const activados = construirCalendarioActivaciones(fechas);
   return calcularRacha(activados, getHoyColombia());
+}
+
+/**
+ * Estados de racha de VARIOS usuarios calculados en UNA sola consulta a
+ * historial_ejercicios (mismo filtro de corte que leerFechasEjercicio).
+ * Evita N consultas al renderizar la lista de usuarios del panel admin.
+ *
+ * Devuelve un mapa userId → EstadoRacha. Los usuarios sin historial obtienen
+ * el estado por defecto (currentCount 0) en lugar de ausentarse del mapa,
+ * para que el UI no tenga que tratar casos especiales.
+ */
+export async function getEstadosRachaUsuarios(
+  userIds: string[]
+): Promise<Record<string, EstadoRacha>> {
+  if (userIds.length === 0) return {};
+
+  const supabase = await createClient();
+  const desdeLimiteMovil = new Date();
+  desdeLimiteMovil.setUTCDate(desdeLimiteMovil.getUTCDate() - DIAS_HISTORIA_RACHA);
+  const desdeCorteRacha = new Date(`${FECHA_INICIO_RACHA}T05:00:00.000Z`);
+  const desde =
+    desdeCorteRacha.getTime() > desdeLimiteMovil.getTime()
+      ? desdeCorteRacha
+      : desdeLimiteMovil;
+
+  const { data, error } = await supabase
+    .from("historial_ejercicios")
+    .select("user_id, fecha_completado")
+    .in("user_id", userIds)
+    .gte("fecha_completado", desde.toISOString())
+    .order("fecha_completado", { ascending: false });
+
+  if (error) {
+    console.error("Error leyendo historial multi-usuario para racha:", error);
+    return {};
+  }
+
+  const fechasPorUsuario = new Map<string, string[]>();
+  for (const r of data ?? []) {
+    const fila = r as { user_id?: string; fecha_completado?: string };
+    if (!fila.user_id || !fila.fecha_completado) continue;
+    const lista = fechasPorUsuario.get(fila.user_id);
+    if (lista) {
+      lista.push(fila.fecha_completado);
+    } else {
+      fechasPorUsuario.set(fila.user_id, [fila.fecha_completado]);
+    }
+  }
+
+  const hoy = getHoyColombia();
+  const resultado: Record<string, EstadoRacha> = {};
+  for (const uid of userIds) {
+    const activados = construirCalendarioActivaciones(
+      fechasPorUsuario.get(uid) ?? []
+    );
+    resultado[uid] = calcularRacha(activados, hoy);
+  }
+  return resultado;
+}
+
+/**
+ * Resumen de racha para la vista de detalle del usuario en el panel admin:
+ * estado actual + mejor racha histórica + días activos del mes en curso
+ * (Bogotá), calculados en UNA sola consulta de historial.
+ */
+export async function getResumenAdminRacha(
+  userId: string
+): Promise<ResumenAdminRacha> {
+  const fechas = await leerFechasEjercicio(userId, DIAS_HISTORIA_MEJOR);
+  const activados = construirCalendarioActivaciones(fechas);
+  const hoyStr = getHoyColombia();
+  const estado = calcularRacha(activados, hoyStr);
+  const prefijo = hoyStr.slice(0, 7); // "YYYY-MM"
+  const diasActivosMes = [...activados].filter(
+    (fecha) => fecha.startsWith(prefijo) && esDiaExigible(stringAFecha(fecha))
+  ).length;
+
+  return {
+    estado,
+    mejorRacha: calcularMejorRacha(activados),
+    diasActivosMes,
+  };
 }
 
 /**

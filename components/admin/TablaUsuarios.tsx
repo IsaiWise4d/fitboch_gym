@@ -3,8 +3,9 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronRight } from "lucide-react";
+import { Search, ChevronRight, Flame } from "lucide-react";
 import type { Profile, Membresia } from "@/types/app";
+import type { EstadoRacha } from "@/lib/racha/types";
 import { isBefore, addDays, parseISO, startOfDay } from "date-fns";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -130,10 +131,44 @@ function formatearMonto(monto: number | null): string {
   return `$${monto.toLocaleString("es-CO")}`;
 }
 
+/** Clase de color del badge de racha según su estado. */
+function colorRacha(racha: EstadoRacha | undefined): string {
+  if (!racha) return "text-muted-foreground";
+  if (racha.enRiesgo) return "text-warning";
+  if (racha.currentCount > 0) return "text-orange-400";
+  return "text-muted-foreground";
+}
+
+/** Badge 🔥 con la racha actual del usuario (días consecutivos). */
+function BadgeRacha({ racha }: { racha: EstadoRacha | undefined }) {
+  const count = racha?.currentCount ?? 0;
+  const color = colorRacha(racha);
+  const titulo = racha
+    ? racha.rota
+      ? "Racha rota"
+      : racha.enRiesgo
+        ? "Racha en riesgo"
+        : racha.hoyActivado
+          ? "Hoy activada"
+          : `Racha: ${count} día${count === 1 ? "" : "s"}`
+    : "Racha no disponible";
+
+  return (
+    <div className="flex items-center gap-1" title={titulo}>
+      <Flame
+        className={`h-4 w-4 ${color} ${racha?.hoyActivado ? "flame-pulse" : ""}`}
+      />
+      <span className={`text-sm font-semibold ${color}`}>{count}</span>
+    </div>
+  );
+}
+
 export function TablaUsuarios({
   usuarios,
+  rachas,
 }: {
   usuarios: UsuarioConMembresia[];
+  rachas?: Record<string, EstadoRacha>;
 }) {
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todos");
@@ -256,7 +291,8 @@ export function TablaUsuarios({
                     Edad: {usuario.fecha_nacimiento ? `${calcularEdad(usuario.fecha_nacimiento)} años` : "No definida"} · Nacimiento: {usuario.fecha_nacimiento ? format(parseISO(usuario.fecha_nacimiento), "d MMM yyyy", { locale: es }) : "No definido"}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0 ml-4">
+                <div className="flex items-center gap-2 shrink-0 ml-2 sm:ml-4 sm:gap-3">
+                  <BadgeRacha racha={rachas?.[usuario.id]} />
                   <div className="text-right">
                     <p className={`text-xs font-medium ${estado.color}`}>
                       {estado.label}
