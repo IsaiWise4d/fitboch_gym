@@ -6,6 +6,7 @@
  *   ### Día 1: Push
  *   **Día 1: TORSO A**
  *   **Día 6 & 7: Descanso**
+ *   ## 🔥 Día 1 (Lunes): PECHO + HOMBRO (la IA a veces antepone emojis)
  *
  * Incluye días de descanso (tablaMd = null) para mostrar los 7 días de la semana.
  */
@@ -25,10 +26,14 @@ export interface DiaSemana {
 
 // Captura: grupo 1 = primer número, grupo 2 = segundo número (si "6 & 7"), grupo 3 = descripción
 // Ignora el nombre del día en la semana si la IA lo incluye (ej: " (Lunes)") antes del separador (: o -).
+// Tolera prefijos no alfanuméricos entre el marcador markdown y "Día" (emojis 🔥⚡🛑, bullets, **).
 const REGEX_DIA =
-  /(?:^#{2,4}\s*\**\s*|\*\*\s*)d[ií]a\s+(\d+)(?:\s*[&yY,]\s*(\d+))?[^:\-—–]*[:\-—–]\s*(.+?)(?:\*\*\s*)?$/i;
+  /^\s*(?:#{1,4}\s*)?(?:\*\*)?\s*[^A-Za-z0-9ÁÉÍÓÚáéíóúÑñÜü]*d[ií]a\s+(\d+)(?:\s*[&yY,]\s*(\d+))?[^:\-—–]*[:\-—–]\s*(.+?)(?:\*\*\s*)?\s*$/i;
 
-const DESCANSO_KEYWORDS = /descanso|liss|cardio|recuperaci[oó]n|off|rest/i;
+// Solo marca descanso si NO hay tabla o el título lo dice explícitamente.
+// "cardio"/"liss"/"hiit" ya no marcan descanso por sí solos: un Full Body + Cardio HIIT
+// con tabla es entrenamiento, no descanso (antes el viernes de esos planes salía como Descanso).
+const DESCANSO_EXPLICITO = /descanso|recuperaci[oó]n|\boff\b|\brest\b/i;
 
 /**
  * Parsea el texto completo de la rutina y devuelve los 7 días de la semana.
@@ -70,7 +75,7 @@ export function parsearDiasRutina(textoRutina: string): DiaSemana[] {
   const dias: DiaSemana[] = [];
   for (const raw of diasRaw) {
     const tabla = extraerTabla(raw.lineas);
-    const esDescanso = !tabla || DESCANSO_KEYWORDS.test(raw.titulo);
+    const esDescanso = !tabla || DESCANSO_EXPLICITO.test(raw.titulo);
 
     for (const num of raw.numeros) {
       dias.push({
