@@ -16,9 +16,11 @@ export default async function CalentamientosPage() {
 
   return (
     <div className="space-y-4 p-4">
-      <div>
-        <h1 className="text-xl font-bold">Calentamientos</h1>
-        <p className="text-sm text-muted-foreground">Prepara tu cuerpo antes de entrenar</p>
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold tracking-tight">Calentamientos</h1>
+        <p className="text-sm text-muted-foreground">
+          Prepara tu cuerpo antes de entrenar. Hazlos en orden, toma solo unos minutos.
+        </p>
       </div>
       <CalentamientosList calentamientos={calentamientos ?? []} />
     </div>

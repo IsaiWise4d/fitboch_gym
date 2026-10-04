@@ -293,17 +293,16 @@ export function DescargaPDF({ rutina }: DescargaPDFProps) {
   return (
     <Button
       variant="outline"
-      size="sm"
       onClick={handleDownload}
       disabled={loading}
-      className="w-full sm:w-auto"
+      className="h-11 w-full gap-2 border-white/15 bg-background/60 font-semibold backdrop-blur"
     >
       {loading ? (
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
-        <FileText className="h-4 w-4 mr-2" />
+        <FileText className="h-4 w-4" />
       )}
-      {loading ? "Generando PDF..." : "Exportar PDF Premium"}
+      {loading ? "Generando PDF..." : "Descargar en PDF"}
     </Button>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Search, ChevronRight, Flame } from "lucide-react";
+import { ChevronRight, Flame } from "lucide-react";
+import { CampoBusqueda, FiltrosChips, normalizarTexto } from "@/components/shared/Filtros";
 import type { Profile, Membresia } from "@/types/app";
 import type { EstadoRacha } from "@/lib/racha/types";
 import { isBefore, addDays, parseISO, startOfDay } from "date-fns";
@@ -188,12 +188,11 @@ export function TablaUsuarios({
 
     // Búsqueda
     if (busqueda.trim()) {
-      const q = busqueda.toLowerCase();
+      const q = normalizarTexto(busqueda.trim());
       resultado = resultado.filter(
         ({ usuario }) =>
-          usuario.nombre.toLowerCase().includes(q) ||
-          (usuario.apellido?.toLowerCase().includes(q) ?? false) ||
-          usuario.email.toLowerCase().includes(q)
+          normalizarTexto(`${usuario.nombre} ${usuario.apellido ?? ""}`).includes(q) ||
+          normalizarTexto(usuario.email).includes(q)
       );
     }
 
@@ -234,35 +233,22 @@ export function TablaUsuarios({
   return (
     <div className="space-y-4">
       {/* Búsqueda */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nombre o email..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      <CampoBusqueda
+        valor={busqueda}
+        onCambio={setBusqueda}
+        placeholder="Buscar por nombre o email..."
+      />
 
       {/* Filtros */}
-      <div className="flex flex-wrap justify-center gap-2">
-        {filtros.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFiltro(f.value)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-              filtro === f.value
-                ? "bg-primary text-white"
-                : "bg-surface text-muted-foreground hover:bg-white/10"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      <FiltrosChips
+        etiqueta="Filtrar usuarios por estado"
+        opciones={filtros}
+        activo={filtro}
+        onCambio={setFiltro}
+      />
 
       {/* Contador */}
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground" aria-live="polite">
         {filtrados.length} usuario{filtrados.length !== 1 ? "s" : ""}
       </p>
 
@@ -278,7 +264,7 @@ export function TablaUsuarios({
               <Link
                 key={usuario.id}
                 href={`/admin/usuarios/${usuario.id}`}
-                className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+                className="flex items-center justify-between p-4 transition-colors hover:bg-white/5 active:bg-white/10"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">
@@ -308,7 +294,7 @@ export function TablaUsuarios({
                       </>
                     )}
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 </div>
               </Link>
             );

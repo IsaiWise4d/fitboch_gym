@@ -84,18 +84,19 @@ export default async function AdminDashboardPage() {
 
       {/* Métricas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {metricas.map((m) => {
+        {metricas.map((m, i) => {
           const Icon = m.icon;
           return (
             <div
               key={m.label}
-              className="rounded-lg border border-border bg-surface p-4 space-y-2"
+              className="rounded-lg border border-border bg-surface p-4 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both"
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">{m.label}</p>
                 <Icon className={`h-4 w-4 ${m.color}`} />
               </div>
-              <p className="text-2xl font-bold">{m.valor}</p>
+              <p className="text-2xl font-bold tabular-nums">{m.valor}</p>
             </div>
           );
         })}
@@ -160,7 +161,7 @@ export default async function AdminDashboardPage() {
             Membresías por vencer
           </h2>
           <div className="rounded-lg border border-border bg-surface divide-y divide-border">
-            {porVencer.map((m: any) => (
+            {porVencer.map((m) => (
               <Link
                 key={m.id}
                 href={`/admin/usuarios/${m.usuario_id}`}

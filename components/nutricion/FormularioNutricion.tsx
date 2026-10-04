@@ -63,7 +63,7 @@ const HORARIOS_ENTRENAMIENTO = [
   { value: "noche", label: "Noche (7pm en adelante)" },
 ];
 
-const selectClass = "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+const selectClass = "flex h-10 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm";
 
 const FRASES_LOADING = [
   "Analizando tu metabolismo y requerimientos...",
@@ -97,8 +97,12 @@ function GenerandoOverlay() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface p-8 text-center space-y-6">
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+    >
+      <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface p-8 text-center space-y-6 animate-in zoom-in-95 fade-in duration-300">
         {/* Icono animado */}
         <div className="relative mx-auto h-20 w-20">
           <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
@@ -255,13 +259,13 @@ export function FormularioNutricion({ profile }: { profile: Profile }) {
 
       {/* Error */}
       {error && (
-        <div className="rounded-md bg-error/10 p-3 text-sm text-error">
+        <div role="alert" className="rounded-lg bg-error/10 p-3 text-sm text-error animate-in fade-in">
           {error}
         </div>
       )}
 
       {/* Submit */}
-      <Button type="submit" className="w-full" disabled={generating}>
+      <Button type="submit" className="h-12 w-full text-base font-semibold" disabled={generating}>
         {generating ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

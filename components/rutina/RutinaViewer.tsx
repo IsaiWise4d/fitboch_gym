@@ -1,43 +1,55 @@
 import type { Rutina } from "@/types/app";
-import { Calendar, FileText } from "lucide-react";
+import { CalendarDays, Dumbbell } from "lucide-react";
 import { formatFechaColombia } from "@/lib/utils/fecha";
+import { extraerDias, extraerSecciones } from "@/lib/utils/markdown-secciones";
+import { etiquetaDuracionPlan } from "@/lib/utils/etiquetas";
 import { DescargaPDF } from "./DescargaPDF";
 import { RutinaMarkdown } from "./RutinaMarkdown";
+import { AccesosDias, BotonVolverArriba, IndiceSecciones } from "./NavegacionPlan";
 
 interface RutinaViewerProps {
   rutina: Rutina;
+  /** Vista bloqueada (membresía vencida): sin índice ni controles. */
+  vistaPrevia?: boolean;
 }
 
-export function RutinaViewer({ rutina }: RutinaViewerProps) {
+export function RutinaViewer({ rutina, vistaPrevia = false }: RutinaViewerProps) {
   const fechaGenerada = formatFechaColombia(rutina.created_at, "d 'de' MMMM, yyyy");
-
-  const duracionLabel: Record<string, string> = {
-    "3_meses": "3 Meses",
-    "6_meses": "6 Meses",
-    "12_meses": "12 Meses",
-  };
+  const duracion = etiquetaDuracionPlan(rutina.duracion_plan);
+  const secciones = vistaPrevia ? [] : extraerSecciones(rutina.texto_rutina);
+  const dias = vistaPrevia ? [] : extraerDias(rutina.texto_rutina);
 
   return (
     <div className="space-y-4">
-      {/* Meta info */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <FileText className="h-3.5 w-3.5" />
-          Plan {duracionLabel[rutina.duracion_plan] || rutina.duracion_plan}
-        </span>
-        <span className="flex items-center gap-1">
-          <Calendar className="h-3.5 w-3.5" />
-          Generada {fechaGenerada}
-        </span>
-      </div>
+      {/* Resumen del plan */}
+      <section className="space-y-4 rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-4">
+        <div className="flex items-start gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+            <Dumbbell className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary/90">
+              Tu plan personalizado
+            </p>
+            <p className="text-lg font-bold leading-tight">Plan de {duracion}</p>
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+              Generada el {fechaGenerada}
+            </p>
+          </div>
+        </div>
+        <AccesosDias dias={dias} />
+        {!vistaPrevia && <DescargaPDF rutina={rutina} />}
+      </section>
 
-      {/* Botón PDF — deshabilitado temporalmente */}
-      <DescargaPDF rutina={rutina} />
+      <IndiceSecciones secciones={secciones} />
 
-      {/* Contenido de la rutina */}
-      <div className="rounded-xl border border-border bg-surface p-4 md:p-6">
+      {/* Contenido: sin marco en el teléfono para aprovechar el ancho */}
+      <article className="pt-2 sm:rounded-2xl sm:border sm:border-border sm:bg-surface/40 sm:p-6">
         <RutinaMarkdown texto={rutina.texto_rutina} />
-      </div>
+      </article>
+
+      {!vistaPrevia && <BotonVolverArriba />}
     </div>
   );
 }

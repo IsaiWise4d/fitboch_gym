@@ -15,13 +15,26 @@
 // justo tras el insert.
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Flame, AlertTriangle } from "lucide-react";
-import type { EstadoRacha } from "@/lib/racha/types";
+import Link from "next/link";
+import { Flame, AlertTriangle, Check, ChevronRight } from "lucide-react";
+import { mensajeRacha } from "@/lib/racha/mensajes";
+import type { DiaSemanaRacha, EstadoRacha } from "@/lib/racha/types";
 
 interface Props {
   initialState: EstadoRacha;
+  /** Lunes a domingo de la semana actual (Bogotá), calculado en el server. */
+  semanaInicial: DiaSemanaRacha[];
 }
+
+const NOMBRE_DIA: Record<string, string> = {
+  L: "Lunes",
+  M: "Martes",
+  X: "Miércoles",
+  J: "Jueves",
+  V: "Viernes",
+  S: "Sábado",
+  D: "Domingo",
+};
 
 type SavedEvent = CustomEvent<{ estado?: EstadoRacha }> | Event;
 
@@ -35,8 +48,7 @@ function leerEstadoDeEvento(e: SavedEvent): EstadoRacha | null {
   return null;
 }
 
-export function StreakWidgetClient({ initialState }: Props) {
-  const router = useRouter();
+export function StreakWidgetClient({ initialState, semanaInicial }: Props) {
   const [estado, setEstado] = useState<EstadoRacha>(initialState);
   const [animando, setAnimando] = useState(false);
   const animTimer = useRef<number | null>(null);
@@ -68,22 +80,24 @@ export function StreakWidgetClient({ initialState }: Props) {
 
   const { currentCount, enRiesgo, hoyActivado } = estado;
 
-  const mensaje = (() => {
-    if (estado.esDomingo) return "Hoy es descanso; tu racha descansa";
-    if (currentCount === 0) return "Registra hoy para empezar tu racha";
-    if (hoyActivado) return "¡Racha activa hoy! Vuelve mañana";
-    return `${currentCount} día${currentCount === 1 ? "" : "s"} seguido${currentCount === 1 ? "" : "s"}`;
-  })();
+  // El día de hoy se pinta con el estado más reciente (llega por eventos al
+  // guardar o borrar). El domingo no es exigible: conserva el dato del server.
+  const semana = semanaInicial.map((dia) =>
+    dia.esHoy && dia.exigible ? { ...dia, activado: hoyActivado } : dia
+  );
+  const entrenadosSemana = semana.filter((dia) => dia.activado).length;
+
+  const mensaje = mensajeRacha(estado);
 
   return (
-    <button
-      onClick={() => router.push("/racha")}
-      className="w-full text-left rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 space-y-3 transition-colors hover:bg-primary/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <Link
+      href="/racha"
+      className="block w-full space-y-4 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 via-surface to-surface p-4 text-left transition-all hover:border-orange-500/35 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span
-            className={`relative inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/15 ${
+            className={`relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-500/15 ${
               animando ? "streak-pop" : currentCount > 0 ? "flame-pulse" : ""
             }`}
           >
@@ -91,28 +105,90 @@ export function StreakWidgetClient({ initialState }: Props) {
               className={`h-6 w-6 ${
                 currentCount > 0 ? "text-orange-400" : "text-muted-foreground"
               }`}
+              aria-hidden="true"
             />
           </span>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Racha
+          <div className="min-w-0">
+            <p className="flex items-baseline gap-1.5">
+              <span
+                key={currentCount}
+                className="text-2xl font-bold leading-none animate-in fade-in zoom-in-50 duration-300"
+              >
+                {currentCount}
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                {currentCount === 1 ? "día de racha" : "días de racha"}
+              </span>
             </p>
-            <p className="text-2xl font-bold leading-none">{currentCount}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{mensaje}</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">{mensaje}</p>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </div>
+
+      {/* Tu semana: lunes a domingo */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-semibold uppercase tracking-wider text-muted-foreground">
+            Tu semana
+          </span>
+          <span className="text-muted-foreground">
+            {entrenadosSemana} {entrenadosSemana === 1 ? "día entrenado" : "días entrenados"}
+          </span>
         </div>
+        <ol className="grid grid-cols-7 gap-1.5">
+          {semana.map((dia) => {
+            const estadoDia = dia.activado
+              ? "entrenaste"
+              : !dia.exigible
+                ? "descanso"
+                : dia.esHoy
+                  ? "pendiente"
+                  : dia.futuro
+                    ? "próximo"
+                    : "sin entrenar";
+            return (
+              <li
+                key={dia.fecha}
+                className="flex flex-col items-center gap-1"
+                aria-label={`${NOMBRE_DIA[dia.letra]} ${dia.dia}: ${estadoDia}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`text-[10px] font-semibold ${dia.esHoy ? "text-orange-300" : "text-muted-foreground"}`}
+                >
+                  {dia.letra}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={`flex aspect-square w-full max-w-9 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300 ${
+                    dia.activado
+                      ? "bg-orange-500 text-black"
+                      : dia.esHoy
+                        ? "border-2 border-orange-500/70 text-orange-300 streak-today-pulse"
+                        : !dia.exigible
+                          ? "bg-white/5 text-muted-foreground/50"
+                          : dia.futuro
+                            ? "border border-dashed border-white/15 text-muted-foreground/60"
+                            : "bg-white/5 text-muted-foreground"
+                  }`}
+                >
+                  {dia.activado ? <Check className="h-4 w-4" strokeWidth={3} /> : dia.dia}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
       {enRiesgo && !hoyActivado && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-300">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-300 animate-in fade-in slide-in-from-top-1">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
           <span>
             Racha en riesgo: registra un ejercicio hoy para no perderla mañana.
           </span>
         </div>
       )}
-    </button>
+    </Link>
   );
 }

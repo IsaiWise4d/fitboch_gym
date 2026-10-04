@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -23,6 +23,9 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  // El aviso de cuenta deshabilitada viene en la URL (?error=disabled, ver
+  // middleware.ts); se deriva en render y se oculta al volver a intentar.
+  const [avisoUrlDescartado, setAvisoUrlDescartado] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -34,15 +37,16 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  useEffect(() => {
-    if (searchParams.get("error") === "disabled") {
-      setError("Tu cuenta está deshabilitada. Contacta al administrador.");
-    }
-  }, [searchParams]);
+  const mensajeError =
+    error ??
+    (!avisoUrlDescartado && searchParams.get("error") === "disabled"
+      ? "Tu cuenta está deshabilitada. Contacta al administrador."
+      : null);
 
   async function onSubmit(data: LoginFormData) {
     setLoading(true);
     setError(null);
+    setAvisoUrlDescartado(true);
 
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({
@@ -89,11 +93,18 @@ export function LoginForm() {
         <Input
           id="email"
           type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="next"
           placeholder="tu@email.com"
+          aria-invalid={errors.email ? true : undefined}
+          aria-describedby={errors.email ? "email-error" : undefined}
           {...register("email")}
         />
         {errors.email && (
-          <p className="text-sm text-error">{errors.email.message}</p>
+          <p id="email-error" className="text-sm text-error">{errors.email.message}</p>
         )}
       </div>
 
@@ -103,13 +114,20 @@ export function LoginForm() {
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            enterKeyHint="go"
             placeholder="******"
+            className="pr-11"
+            aria-invalid={errors.password ? true : undefined}
+            aria-describedby={errors.password ? "password-error" : undefined}
             {...register("password")}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+            className="absolute right-0.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            aria-pressed={showPassword}
             title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
           >
             {showPassword ? (
@@ -120,24 +138,29 @@ export function LoginForm() {
           </button>
         </div>
         {errors.password && (
-          <p className="text-sm text-error">{errors.password.message}</p>
+          <p id="password-error" className="text-sm text-error">{errors.password.message}</p>
         )}
       </div>
 
-      {error && (
-        <div className="rounded-md bg-error/10 p-3 text-sm text-error">
-          {error}
+      {mensajeError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-error/10 p-3 text-sm text-error animate-in fade-in slide-in-from-top-1"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          {mensajeError}
         </div>
       )}
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="h-11 w-full text-base font-semibold" disabled={loading}>
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         {loading ? "Ingresando..." : "Iniciar Sesión"}
       </Button>
 
       <div className="text-center">
         <Link
           href="/recuperar-password"
-          className="text-sm text-muted-foreground hover:text-primary"
+          className="inline-block rounded-md px-2 py-2 text-sm text-muted-foreground transition-colors hover:text-primary"
         >
           ¿Olvidaste tu contraseña?
         </Link>

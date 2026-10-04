@@ -80,6 +80,7 @@ export function ActualizarPasswordForm() {
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
             placeholder="••••••••"
             {...register("password")}
           />
@@ -102,6 +103,7 @@ export function ActualizarPasswordForm() {
           <Input
             id="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
+            autoComplete="new-password"
             placeholder="••••••••"
             {...register("confirmPassword")}
           />
@@ -124,7 +126,7 @@ export function ActualizarPasswordForm() {
         </div>
       )}
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="h-11 w-full text-base font-semibold" disabled={loading}>
         {loading ? "Actualizando..." : "Actualizar Contraseña"}
       </Button>
     </form>

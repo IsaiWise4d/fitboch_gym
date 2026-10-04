@@ -22,7 +22,7 @@
 //   anteriores se ignoran para la racha pero se conservan en
 //   historial_ejercicios para PRs e historial.
 
-import type { EstadoRacha } from "./types";
+import type { DiaSemanaRacha, EstadoRacha } from "./types";
 import {
   diaSemanaBogota,
   fechaAString,
@@ -289,6 +289,31 @@ export function diasExigiblesEntre(inicio: Date, fin: Date): Date[] {
     c = sumarDias(c, 1);
   }
   return out;
+}
+
+const LETRAS_SEMANA = ["L", "M", "X", "J", "V", "S", "D"];
+
+/**
+ * Los 7 días (lunes a domingo, Bogotá) de la semana que contiene `hoyStr`,
+ * marcando cuáles tuvieron ejercicio, cuál es hoy y cuáles faltan.
+ */
+export function semanaActual(activados: Set<string>, hoyStr: string): DiaSemanaRacha[] {
+  const hoy = stringAFecha(hoyStr);
+  const dow = diaSemanaBogota(hoy);
+  const lunes = sumarDias(hoy, -(dow === DOMINGO ? 6 : dow - 1));
+  return LETRAS_SEMANA.map((letra, i) => {
+    const dia = sumarDias(lunes, i);
+    const fecha = fechaAString(dia);
+    return {
+      fecha,
+      dia: dia.getUTCDate(),
+      letra,
+      exigible: esDiaExigible(dia),
+      activado: activados.has(fecha),
+      esHoy: fecha === hoyStr,
+      futuro: fecha > hoyStr,
+    };
+  });
 }
 
 export { fechaAString, stringAFecha, sumarDias };

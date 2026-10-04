@@ -1,18 +1,15 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { ExerciseHistoryLog } from "@/components/ejercicios/ExerciseHistoryLog";
-import { MediaPreview } from "@/components/calentamientos/MediaPreview";
-
-function getYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
-  return match ? match[1] : null;
-}
-
-function esVideoDirecto(url: string): boolean {
-  return /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(url);
-}
+import { EjerciciosRelacionados } from "@/components/ejercicios/EjerciciosRelacionados";
+import { BotonEntrenarEjercicio } from "@/components/ejercicios/BotonEntrenarEjercicio";
+import { VisorMedia } from "@/components/shared/VisorMedia";
+import { PasosInstrucciones } from "@/components/shared/PasosInstrucciones";
+import { IndicadorNivel } from "@/components/shared/IndicadorNivel";
+import { Skeleton } from "@/components/shared/Skeleton";
+import { ICONOS_RESPALDO, iconoDeGrupo } from "@/components/shared/iconos";
+import { mediasEjercicio } from "@/lib/utils/media";
 
 export default async function EjercicioDetallePage({
   params,
@@ -39,95 +36,63 @@ export default async function EjercicioDetallePage({
     notFound();
   }
 
-  const videoUrl = ejercicio.video_url;
-  const youTubeId = videoUrl ? getYouTubeId(videoUrl) : null;
+  const icono = iconoDeGrupo(ejercicio.grupo_muscular);
+  const IconoGrupo = ICONOS_RESPALDO[icono];
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/ejercicios"
-          className="rounded-lg p-2 hover:bg-surface transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="text-xl font-bold">{ejercicio.nombre}</h1>
-      </div>
+    <div className="space-y-6 p-4">
+      <VisorMedia
+        medias={mediasEjercicio(ejercicio)}
+        alt={`Demostración de ${ejercicio.nombre}`}
+        hrefVolver="/ejercicios"
+        etiquetaVolver="Volver a ejercicios"
+        icono={icono}
+      />
 
-      {/* Imagen */}
-      {ejercicio.imagen_url && (
-        <div className="flex justify-center">
-          <div className="rounded-xl overflow-hidden border border-border w-full max-w-md">
-            <img
-              src={ejercicio.imagen_url}
-              alt={ejercicio.nombre}
-              className="w-full aspect-square object-cover"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Info */}
-      <div className="flex gap-2">
-        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary capitalize">
-          {ejercicio.grupo_muscular}
-        </span>
-        <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-muted-foreground capitalize">
-          {ejercicio.categoria}
-        </span>
-        {ejercicio.nivel !== "todos" && (
-          <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-muted-foreground capitalize">
-            {ejercicio.nivel}
+      {/* Qué es */}
+      <header className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold capitalize text-primary">
+            <IconoGrupo className="h-3.5 w-3.5" aria-hidden="true" />
+            {ejercicio.grupo_muscular}
           </span>
-        )}
-      </div>
-
-      {/* Descripción */}
-      {ejercicio.descripcion && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">
-            Descripción
-          </h2>
-          <p className="text-sm leading-relaxed">{ejercicio.descripcion}</p>
+          <IndicadorNivel nivel={ejercicio.nivel} />
+          <span className="rounded-full bg-surface px-3 py-1.5 text-xs font-medium capitalize text-muted-foreground">
+            {ejercicio.categoria}
+          </span>
         </div>
-      )}
-
-      {/* Instrucciones */}
-      <div className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">
-          Cómo hacerlo correctamente
-        </h2>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-sm leading-relaxed whitespace-pre-line">
-            {ejercicio.instrucciones}
+        <h1 className="text-2xl font-bold leading-tight tracking-tight">{ejercicio.nombre}</h1>
+        {ejercicio.descripcion && (
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            {ejercicio.descripcion}
           </p>
-        </div>
+        )}
+      </header>
+
+      {/* Cómo se hace, paso a paso */}
+      <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+        <PasosInstrucciones texto={ejercicio.instrucciones} />
       </div>
 
-      {/* Video: se muestra como GIF (en bucle, silenciado y sin controles) */}
-      {videoUrl && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">Video</h2>
-          <div className="overflow-hidden rounded-xl border border-border bg-surface">
-            {esVideoDirecto(videoUrl) ? (
-              <MediaPreview url={videoUrl} tipo="video" alt={ejercicio.nombre} className="max-h-[480px] w-full object-contain" />
-            ) : youTubeId ? (
-              <iframe
-                src={`https://www.youtube.com/embed/${youTubeId}?autoplay=1&mute=1&loop=1&playlist=${youTubeId}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1`}
-                className="aspect-video w-full"
-                allow="autoplay; encrypted-media"
-                title={ejercicio.nombre}
-              />
-            ) : (
-              <iframe src={videoUrl} className="aspect-video w-full" allowFullScreen title={ejercicio.nombre} />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Historial Específico del Ejercicio */}
+      {/* Mejor marca, última vez e historial del usuario */}
       <ExerciseHistoryLog ejercicioId={id} />
+
+      <Suspense
+        fallback={
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-36" />
+            <div className="flex gap-3 overflow-hidden">
+              {Array.from({ length: 3 }, (_, i) => (
+                <Skeleton key={i} className="h-52 w-36 shrink-0 rounded-2xl" />
+              ))}
+            </div>
+          </div>
+        }
+      >
+        <EjerciciosRelacionados ejercicioId={id} grupoMuscular={ejercicio.grupo_muscular} />
+      </Suspense>
+
+      <BotonEntrenarEjercicio ejercicioId={id} nombre={ejercicio.nombre} />
     </div>
   );
 }

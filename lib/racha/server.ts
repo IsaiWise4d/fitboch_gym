@@ -12,6 +12,7 @@ import {
   construirCalendarioActivaciones,
   esDiaExigible,
   FECHA_INICIO_RACHA,
+  semanaActual,
 } from "./reglas";
 import {
   diaSemanaBogota,
@@ -23,6 +24,7 @@ import {
 import type {
   CalendarioRachaDia,
   EstadoRacha,
+  InicioRacha,
   ResumenAdminRacha,
   ResumenRacha,
 } from "./types";
@@ -70,6 +72,20 @@ export async function getEstadoRacha(userId: string): Promise<EstadoRacha> {
   const fechas = await leerFechasEjercicio(userId, DIAS_HISTORIA_RACHA);
   const activados = construirCalendarioActivaciones(fechas);
   return calcularRacha(activados, getHoyColombia());
+}
+
+/**
+ * Estado de la racha + semana actual para el dashboard, con una sola lectura
+ * del historial.
+ */
+export async function getInicioRacha(userId: string): Promise<InicioRacha> {
+  const fechas = await leerFechasEjercicio(userId, DIAS_HISTORIA_RACHA);
+  const activados = construirCalendarioActivaciones(fechas);
+  const hoy = getHoyColombia();
+  return {
+    estado: calcularRacha(activados, hoy),
+    semana: semanaActual(activados, hoy),
+  };
 }
 
 /**
@@ -233,7 +249,7 @@ export async function getDatosPaginaRacha(
   userId: string,
   year: number,
   month: number
-): Promise<{ resumen: ResumenRacha; dias: CalendarioRachaDia[] }> {
+): Promise<{ estado: EstadoRacha; resumen: ResumenRacha; dias: CalendarioRachaDia[] }> {
   const fechas = await leerFechasEjercicio(userId, DIAS_HISTORIA_MEJOR);
   const activados = construirCalendarioActivaciones(fechas);
   const estado = calcularRacha(activados, getHoyColombia());
@@ -267,6 +283,7 @@ export async function getDatosPaginaRacha(
   }
 
   return {
+    estado,
     resumen: {
       currentCount: estado.currentCount,
       mejorRacha: calcularMejorRacha(activados),

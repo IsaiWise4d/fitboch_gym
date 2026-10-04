@@ -55,3 +55,29 @@ export interface ResumenAdminRacha {
   mejorRacha: number;
   diasActivosMes: number;
 }
+
+/**
+ * Un día de la semana actual (lunes a domingo, Bogotá) para la tira
+ * "Tu semana" del dashboard.
+ */
+export interface DiaSemanaRacha {
+  /** "YYYY-MM-DD" en Bogotá. */
+  fecha: string;
+  /** Día del mes (1..31). */
+  dia: number;
+  /** "L", "M", "X", "J", "V", "S", "D". */
+  letra: string;
+  /** false para el domingo (descanso). */
+  exigible: boolean;
+  /** true si ese día hubo al menos un ejercicio. */
+  activado: boolean;
+  esHoy: boolean;
+  /** true para los días que aún no llegan. */
+  futuro: boolean;
+}
+
+/** Datos de racha para el dashboard: estado + semana actual. */
+export interface InicioRacha {
+  estado: EstadoRacha;
+  semana: DiaSemanaRacha[];
+}

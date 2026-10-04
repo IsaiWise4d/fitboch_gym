@@ -39,6 +39,6 @@ export function MediaPreview({ url, tipo, alt, className }: MediaPreviewProps) {
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element -- URLs dinámicas de Vercel Blob; consistente con el resto del código base
-    <img src={url} alt={alt} className={className} />
+    <img src={url} alt={alt} decoding="async" className={className} />
   );
 }

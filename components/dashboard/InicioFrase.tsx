@@ -43,7 +43,13 @@ export function InicioFrase({ initialFrase, seed }: InicioFraseProps) {
 
   return (
     <div>
-      <p className="mt-2 text-sm font-medium text-primary/90">{frase}</p>
+      <p
+        key={frase}
+        aria-live="polite"
+        className="mt-1.5 text-sm leading-snug text-foreground/70 animate-fade-in"
+      >
+        {frase}
+      </p>
     </div>
   );
 }

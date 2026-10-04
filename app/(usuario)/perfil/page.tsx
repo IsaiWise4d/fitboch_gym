@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getHoyColombia } from "@/lib/utils/fecha";
+import { PerfilEncabezado } from "@/components/perfil/PerfilEncabezado";
 import { PerfilForm } from "@/components/perfil/PerfilForm";
-import { LogOut } from "lucide-react";
 
 export default async function PerfilPage() {
   const supabase = await createClient();
@@ -13,19 +14,26 @@ export default async function PerfilPage() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: membresia }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase
+      .from("membresias")
+      .select("*")
+      .eq("usuario_id", user.id)
+      .eq("estado", "activa")
+      .gte("fecha_fin", getHoyColombia())
+      .order("fecha_fin", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (!profile) {
     redirect("/login");
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-xl font-bold">Mi Perfil</h1>
+    <div className="space-y-5 p-4">
+      <PerfilEncabezado profile={profile} membresia={membresia} />
       <PerfilForm profile={profile} />
     </div>
   );

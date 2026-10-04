@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getHoyColombia } from "@/lib/utils/fecha";
 import { RutinaViewer } from "@/components/rutina/RutinaViewer";
 import { FormularioRutina } from "@/components/rutina/FormularioRutina";
-import { Dumbbell, Lock, ShieldAlert, UserCog } from "lucide-react";
+import { Check, Dumbbell, Lock, ShieldAlert, UserCog } from "lucide-react";
 
 export default async function RutinaPage() {
   const supabase = await createClient();
@@ -44,7 +44,7 @@ export default async function RutinaPage() {
   if (rutina && membresia) {
     return (
       <div className="p-4 space-y-4">
-        <h1 className="text-xl font-bold">Mi Rutina</h1>
+        <h1 className="text-xl font-bold tracking-tight">Mi Rutina</h1>
         <RutinaViewer rutina={rutina} />
       </div>
     );
@@ -72,8 +72,8 @@ export default async function RutinaPage() {
 
         {/* Rutina con blur */}
         <div className="relative rounded-xl overflow-hidden">
-          <div className="blur-md pointer-events-none select-none opacity-40">
-            <RutinaViewer rutina={rutina} />
+          <div className="blur-md pointer-events-none select-none opacity-40" aria-hidden="true">
+            <RutinaViewer rutina={rutina} vistaPrevia />
           </div>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default async function RutinaPage() {
             </p>
             <Link 
               href="/perfil" 
-              className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2.5 rounded-md font-medium text-sm transition-colors"
+              className="mt-4 inline-flex h-11 items-center rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
             >
               Completar mi perfil
             </Link>
@@ -115,7 +115,7 @@ export default async function RutinaPage() {
         </p>
         {incluyeNutricional && (
           <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-3 py-2">
-            <span className="text-success text-sm">✓</span>
+            <Check className="h-4 w-4 shrink-0 text-success" aria-hidden="true" />
             <p className="text-xs text-success font-medium">Tu plan incluye asesoría nutricional personalizada</p>
           </div>
         )}

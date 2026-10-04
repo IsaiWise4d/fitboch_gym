@@ -155,6 +155,38 @@
   }
   html {
     @apply font-sans;
+    /* Controles nativos (date picker, scrollbars, spinners) en oscuro. */
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Mobile: sin el flash gris al tocar y sin el retraso de doble-tap. */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Campos numéricos sin flechas ↑↓: ocupan ancho y recortan el valor. */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  /* Foco visible solo con teclado, coherente con el color de marca. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 
   /* Dark themed select & options */
@@ -250,6 +282,51 @@
 
 .streak-today-pulse {
   animation: streak-today-pulse 1.8s ease-in-out infinite;
+}
+
+/* === Cargas === */
+
+/* Skeleton con brillo que recorre el bloque (ver components/shared/Skeleton). */
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+.skeleton {
+  background-color: var(--surface);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Barra horizontal de chips sin scrollbar visible (filtros en móvil). */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Accesibilidad: respetar "reducir movimiento" del sistema. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 

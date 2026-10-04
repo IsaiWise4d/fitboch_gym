@@ -6,6 +6,7 @@ import {
   construirCalendarioActivaciones,
   esDiaExigible,
   FECHA_INICIO_RACHA,
+  semanaActual,
 } from "./reglas";
 import { stringAFecha } from "./bogota";
 
@@ -53,6 +54,19 @@ describe("reglas de racha", () => {
       )
     ).toBe(5);
     expect(calcularMejorRacha(set("2024-02-26", "2024-02-28"))).toBe(2);
+  });
+
+  it("arma la semana actual de lunes a domingo", () => {
+    // 2024-02-28 es miércoles.
+    const semana = semanaActual(set("2024-02-26", "2024-02-28"), "2024-02-28");
+    expect(semana.map((d) => d.letra).join("")).toBe("LMXJVSD");
+    expect(semana[0]).toMatchObject({ fecha: "2024-02-26", dia: 26, activado: true, futuro: false });
+    expect(semana[1]).toMatchObject({ activado: false, esHoy: false });
+    expect(semana[2]).toMatchObject({ esHoy: true, activado: true });
+    expect(semana[3].futuro).toBe(true);
+    expect(semana[6]).toMatchObject({ fecha: "2024-03-03", exigible: false });
+    // Un domingo pertenece a la semana que empezó el lunes anterior.
+    expect(semanaActual(set(), "2024-03-03")[0].fecha).toBe("2024-02-26");
   });
 
   it("define una fecha de corte de racha con formato YYYY-MM-DD válido", () => {

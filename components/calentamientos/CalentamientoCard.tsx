@@ -1,30 +1,60 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import type { Calentamiento } from "@/types/app";
+import { cn } from "@/lib/utils";
+import { mediaParaMiniatura, mediasCalentamiento, tieneVideo } from "@/lib/utils/media";
+import { MiniaturaMedia } from "@/components/shared/MiniaturaMedia";
+import { iconoDeCategoriaCalentamiento } from "@/components/shared/iconos";
 
-const categoriaEmoji: Record<string, string> = {
-  tren_superior: "💪",
-  tren_inferior: "🦵",
-};
+export function etiquetaCategoriaCalentamiento(categoria: string): string {
+  return categoria === "tren_superior"
+    ? "Tren superior"
+    : categoria === "tren_inferior"
+      ? "Tren inferior"
+      : categoria.replace("_", " ");
+}
 
-export function CalentamientoCard({ calentamiento }: { calentamiento: Calentamiento }) {
-  const emoji = categoriaEmoji[calentamiento.categoria] || "🔥";
+interface CalentamientoCardProps {
+  calentamiento: Pick<
+    Calentamiento,
+    "id" | "nombre" | "categoria" | "media_url" | "media_tipo" | "imagen_url" | "video_url"
+  >;
+  /** Posición dentro de su zona (1, 2, 3…) para seguirlos en orden. */
+  orden?: number;
+  className?: string;
+}
+
+/** Tarjeta con vista previa grande y su número de orden dentro de la zona. */
+export function CalentamientoCard({ calentamiento, orden, className }: CalentamientoCardProps) {
+  const medias = mediasCalentamiento(calentamiento);
 
   return (
     <Link
       href={`/calentamientos/${calentamiento.id}`}
-      className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:bg-surface-hover"
+      className={cn(
+        "group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-all hover:border-primary/40 active:scale-[0.98]",
+        className
+      )}
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-background text-lg">
-        {emoji}
+      <div className="relative">
+        <MiniaturaMedia
+          media={mediaParaMiniatura(medias)}
+          alt=""
+          icono={iconoDeCategoriaCalentamiento(calentamiento.categoria)}
+          conVideo={tieneVideo(medias)}
+          className="aspect-square w-full"
+        />
+        {orden !== undefined && (
+          <span className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow-md">
+            {orden}
+          </span>
+        )}
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{calentamiento.nombre}</p>
-        <p className="text-xs capitalize text-muted-foreground">
-          {calentamiento.categoria.replace("_", " ")}
+      <div className="flex flex-1 flex-col p-3">
+        <p className="line-clamp-2 text-sm font-semibold leading-snug">{calentamiento.nombre}</p>
+        <p className="mt-auto pt-1 text-xs text-muted-foreground">
+          {etiquetaCategoriaCalentamiento(calentamiento.categoria)}
         </p>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
     </Link>
   );
 }

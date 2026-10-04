@@ -54,6 +54,10 @@ Note: there is **no** `vitest.config`, `prettier.config`, or `.cursorrules`/Copi
 - `lib/racha/` is a self-contained module: **pure** streak logic in `reglas.ts`/`bogota.ts`/`types.ts` (testable, no Supabase), server-only reads in `server.ts` (`import "server-only"`), barrel in `index.ts`.
 - **Streak business rules** (all dates in **America/Bogota**, never UTC/user-locale): days Mon–Sat are "exigible", Sunday is off and resets the consecutive-missed counter; 1 missed exigible day is tolerated; 2 missed *in the same work week* (no Sunday between) resets `currentCount` to 0; the streak only counts exercises on/after `FECHA_INICIO_RACHA = "2026-08-23"` (older rows stay in history for PRs but are filtered out server-side). If you change streak behavior, update `reglas.ts` + `reglas.test.ts` and the standalone runtime check `node --experimental-strip-types lib/racha/reglas.runtime-check.ts` (excluded from `tsc` via tsconfig).
 
+### Monthly admin report (Excel)
+- `/admin/reportes` (`components/admin/ReporteMensualForm.tsx`) → `GET /api/admin/reporte-mensual?mes=YYYY-MM[&desactivados=1]` returns an `.xlsx` (sheets: Resumen, Usuarios, Asistencia, Ejercicios registrados, Ranking de ejercicios, Membresías del mes).
+- `lib/reportes/` mirrors `lib/racha/`: **pure** calculations in `mensual.ts` (+ `mensual.test.ts`, relative imports so vitest resolves them), server-only reads in `server.ts` (service-role client, paginated past PostgREST's 1000-row cap, created only after the admin check), and `excel.ts` (exceljs styling only). Streak figures reuse `lib/racha/reglas.ts`, so rule changes flow into the report automatically.
+
 ### Rutina rendering & PDF
 - `lib/utils/parsear-rutina.ts` (`parsearDiasRutina`) extracts the 7 workout-day tables from the AI Markdown (handles `RegEx` variations of day headers, ranges like "6 & 7", and marks rest days).
 - `lib/pdf/` uses jspdf client-side: `markdown-table.ts` parses Markdown tables to grid, `watermark.ts` draws a canvas "FITBOCH" watermark. `components/rutina/DescargaPDF.tsx` and `components/nutricion/DescargaPDFNutricion.tsx` drive the downloads.

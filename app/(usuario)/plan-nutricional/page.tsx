@@ -44,7 +44,7 @@ export default async function PlanNutricionalPage() {
   if (planNutricional && membresia && tienePlanHabilitado) {
     return (
       <div className="p-4 space-y-4">
-        <h1 className="text-xl font-bold">Mi Plan Nutricional</h1>
+        <h1 className="text-xl font-bold tracking-tight">Mi Plan Nutricional</h1>
         <PlanViewer plan={planNutricional} />
       </div>
     );
@@ -71,8 +71,8 @@ export default async function PlanNutricionalPage() {
 
         {/* Plan con blur */}
         <div className="relative rounded-xl overflow-hidden">
-          <div className="blur-md pointer-events-none select-none opacity-40">
-            <PlanViewer plan={planNutricional} />
+          <div className="blur-md pointer-events-none select-none opacity-40" aria-hidden="true">
+            <PlanViewer plan={planNutricional} vistaPrevia />
           </div>
         </div>
       </div>
@@ -96,7 +96,7 @@ export default async function PlanNutricionalPage() {
             </p>
             <Link 
               href="/perfil" 
-              className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2.5 rounded-md font-medium text-sm transition-colors"
+              className="mt-4 inline-flex h-11 items-center rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
             >
               Completar mi perfil
             </Link>

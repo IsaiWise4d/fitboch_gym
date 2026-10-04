@@ -16,11 +16,14 @@ export function LogoutButton() {
 
   return (
     <button
+      type="button"
       onClick={handleLogout}
-      className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-all hover:bg-destructive/10 active:scale-[0.98]"
     >
-      <LogOut className="h-3.5 w-3.5" />
-      Salir
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+        <LogOut className="h-4.5 w-4.5" aria-hidden="true" />
+      </span>
+      <span className="text-sm font-semibold text-destructive">Cerrar sesión</span>
     </button>
   );
 }

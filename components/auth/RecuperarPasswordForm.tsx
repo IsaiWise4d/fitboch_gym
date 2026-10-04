@@ -71,6 +71,10 @@ export function RecuperarPasswordForm() {
         <Input
           id="email"
           type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
           placeholder="tu@email.com"
           {...register("email")}
         />
@@ -85,7 +89,7 @@ export function RecuperarPasswordForm() {
         </div>
       )}
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="h-11 w-full text-base font-semibold" disabled={loading}>
         {loading ? "Enviando..." : "Enviar Enlace de Recuperación"}
       </Button>
 

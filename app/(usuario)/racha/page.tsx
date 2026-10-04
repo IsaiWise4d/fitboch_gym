@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getDatosPaginaRacha } from "@/lib/racha/server";
 import { CalendarioRacha } from "@/components/racha/CalendarioRacha";
-import { Flame, Trophy, CalendarDays } from "lucide-react";
-import type { CalendarioRachaDia, ResumenRacha } from "@/lib/racha/types";
+import { ResumenRachaCard } from "@/components/racha/ResumenRachaCard";
+import { ChevronDown, CircleCheck, Coffee, RotateCcw } from "lucide-react";
 
 function parseYearMonth(searchParams: Record<string, string | string[] | undefined>) {
   const hoy = new Date();
@@ -51,15 +51,7 @@ export default async function RachaPage({
   const params = await searchParams;
   const { year, month, currentYear, currentMonth } = parseYearMonth(params);
 
-  const { resumen, dias } = await getDatosPaginaRacha(user.id, year, month);
-
-  const vacio: ResumenRacha = {
-    currentCount: 0,
-    mejorRacha: 0,
-    diasActivosMes: 0,
-  };
-  const state: ResumenRacha = resumen ?? vacio;
-  const diasSeguros: CalendarioRachaDia[] = dias ?? [];
+  const { estado, resumen, dias } = await getDatosPaginaRacha(user.id, year, month);
 
   const nombreMes = new Intl.DateTimeFormat("es-CO", {
     timeZone: "America/Bogota",
@@ -87,71 +79,70 @@ export default async function RachaPage({
   const hrefNext = `/racha?y=${nextDate.getUTCFullYear()}&m=${nextDate.getUTCMonth() + 1}`;
 
   return (
-    <div className="p-4 space-y-6">
-      <header>
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <Flame className="h-5 w-5 text-orange-400" />
-          Racha
-        </h1>
+    <div className="space-y-6 p-4">
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold tracking-tight">Racha</h1>
         <p className="text-sm text-muted-foreground">
-          Tu constancia día a día. Los domingos son de descanso y no cuentan.
+          Tu constancia día a día. Entrena de lunes a sábado para mantenerla.
         </p>
-      </header>
-
-      {/* Resumen */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-border bg-surface p-3 text-center">
-          <Flame className="h-5 w-5 mx-auto text-orange-400" />
-          <p className="mt-2 text-2xl font-bold leading-none">
-            {state.currentCount}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Actual</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3 text-center">
-          <Trophy className="h-5 w-5 mx-auto text-primary" />
-          <p className="mt-2 text-2xl font-bold leading-none">
-            {state.mejorRacha}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Mejor</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3 text-center">
-          <CalendarDays className="h-5 w-5 mx-auto text-muted-foreground" />
-          <p className="mt-2 text-2xl font-bold leading-none">
-            {state.diasActivosMes}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Este mes</p>
-        </div>
       </div>
 
-      {/* Calendario */}
+      <ResumenRachaCard estado={estado} mejorRacha={resumen.mejorRacha} />
+
       <CalendarioRacha
-        dias={diasSeguros}
+        dias={dias}
         nombreMes={nombreMes}
+        diasEntrenados={resumen.diasActivosMes}
         hrefPrev={hrefPrev}
         hrefNext={hrefNext}
         nextDisabled={nextDisabled}
         hoyStr={hoyBogota}
       />
 
-      {/* Leyenda */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-orange-400/80" />
-          Día activado
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full border border-orange-500/60" />
-          Hoy (pendiente)
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-muted-foreground/30" />
-          Día exigible no activado
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-muted/60" />
-          Descanso (domingo)
-        </span>
-      </div>
+      <ComoFuncionaRacha />
     </div>
+  );
+}
+
+const REGLAS_RACHA = [
+  {
+    icono: CircleCheck,
+    color: "bg-orange-500/15 text-orange-400",
+    texto: "Registra al menos un ejercicio de lunes a sábado para sumar un día.",
+  },
+  {
+    icono: Coffee,
+    color: "bg-white/10 text-foreground",
+    texto: "El domingo es descanso: no suma ni rompe tu racha.",
+  },
+  {
+    icono: RotateCcw,
+    color: "bg-amber-500/15 text-amber-300",
+    texto: "Puedes fallar un día. Si fallas dos seguidos (sin un domingo en medio), la racha vuelve a cero.",
+  },
+];
+
+/** Reglas de la racha, plegadas para no robar espacio al calendario. */
+function ComoFuncionaRacha() {
+  return (
+    <details className="group rounded-2xl border border-border bg-surface">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+        ¿Cómo funciona tu racha?
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <ul className="space-y-3 border-t border-border/60 px-4 py-3">
+        {REGLAS_RACHA.map(({ icono: Icono, color, texto }) => (
+          <li key={texto} className="flex items-start gap-3">
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}>
+              <Icono className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <p className="pt-1.5 text-xs leading-relaxed text-muted-foreground">{texto}</p>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
