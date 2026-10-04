@@ -10,39 +10,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database";
 import { getHoyColombia } from "@/lib/utils/fecha";
+import { leerTodo, primero } from "@/lib/supabase/paginacion";
 import { construirReporteMensual, rangoMes } from "@/lib/reportes/mensual";
+import { construirTendencia, mesesHasta, type PuntoTendencia } from "@/lib/reportes/tendencia";
 import type {
   RegistroPrevioReporte,
   RegistroReporte,
   ReporteMensual,
   UsuarioReporte,
 } from "@/lib/reportes/mensual";
-
-/** PostgREST de Supabase devuelve como máximo 1000 filas por petición. */
-const TAMANO_PAGINA = 1000;
-
-interface RespuestaPagina<T> {
-  data: T[] | null;
-  error: { message: string } | null;
-}
-
-async function leerTodo<T>(
-  pagina: (desde: number, hasta: number) => PromiseLike<RespuestaPagina<T>>
-): Promise<T[]> {
-  const filas: T[] = [];
-  for (let desde = 0; ; desde += TAMANO_PAGINA) {
-    const { data, error } = await pagina(desde, desde + TAMANO_PAGINA - 1);
-    if (error) throw new Error(error.message);
-    filas.push(...(data ?? []));
-    if (!data || data.length < TAMANO_PAGINA) return filas;
-  }
-}
-
-/** Supabase puede tipar una relación many-to-one como objeto o arreglo. */
-function primero<T>(valor: T | T[] | null | undefined): T | null {
-  if (Array.isArray(valor)) return valor[0] ?? null;
-  return valor ?? null;
-}
 
 interface FilaRegistroMes {
   id: string;
@@ -149,5 +125,71 @@ export async function obtenerReporteMensual(
     usuarios: usuarios.map((u) => ({ ...u, membresias: u.membresias ?? [] })),
     registrosMes: registrosMesNormalizados,
     registrosPrevios: registrosPreviosNormalizados,
+  });
+}
+
+/**
+ * Tendencia de los `cantidad` meses que terminan en `mes`: registros y
+ * usuarios nuevos por conteo (head) en paralelo, membresías leídas una vez.
+ */
+export async function obtenerTendencia(
+  supabaseAdmin: SupabaseClient<Database>,
+  mes: string,
+  cantidad = 6
+): Promise<PuntoTendencia[]> {
+  const meses = mesesHasta(mes, cantidad);
+  const desde = rangoMes(meses[0]).inicioUtcIso;
+  const hasta = rangoMes(meses[meses.length - 1]).finUtcIso;
+
+  const contar = async (
+    consulta: PromiseLike<{ count: number | null; error: { message: string } | null }>
+  ) => {
+    const { count, error } = await consulta;
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  };
+
+  const [conteos, membresias] = await Promise.all([
+    Promise.all(
+      meses.map(async (m) => {
+        const rango = rangoMes(m);
+        const [registros, usuariosNuevos] = await Promise.all([
+          contar(
+            supabaseAdmin
+              .from("historial_ejercicios")
+              .select("id", { count: "exact", head: true })
+              .gte("fecha_completado", rango.inicioUtcIso)
+              .lt("fecha_completado", rango.finUtcIso)
+          ),
+          contar(
+            supabaseAdmin
+              .from("profiles")
+              .select("id", { count: "exact", head: true })
+              .eq("rol", "usuario")
+              .gte("created_at", rango.inicioUtcIso)
+              .lt("created_at", rango.finUtcIso)
+          ),
+        ]);
+        return { mes: m, registros, usuariosNuevos };
+      })
+    ),
+    leerTodo<{ created_at: string; monto_pagado: number | null }>((desdeFila, hastaFila) =>
+      supabaseAdmin
+        .from("membresias")
+        .select("created_at, monto_pagado")
+        .gte("created_at", desde)
+        .lt("created_at", hasta)
+        .order("created_at")
+        .order("id")
+        .range(desdeFila, hastaFila)
+    ),
+  ]);
+
+  return construirTendencia({
+    meses,
+    mesActual: getHoyColombia().slice(0, 7),
+    registrosPorMes: Object.fromEntries(conteos.map((c) => [c.mes, c.registros])),
+    usuariosNuevosPorMes: Object.fromEntries(conteos.map((c) => [c.mes, c.usuariosNuevos])),
+    membresias,
   });
 }

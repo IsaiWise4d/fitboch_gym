@@ -1,37 +1,23 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { TablaUsuarios } from "@/components/admin/TablaUsuarios";
-import { UsuariosHeader } from "@/components/admin/UsuariosHeader";
-import { getEstadosRachaUsuarios } from "@/lib/racha/server";
-import type { EstadoRacha } from "@/lib/racha/types";
+import { ListaUsuarios } from "@/components/admin/usuarios/ListaUsuarios";
+import { DialogoNuevoUsuario } from "@/components/admin/usuarios/DialogoNuevoUsuario";
+import { PageHeader } from "@/components/admin/ui/PageHeader";
+import { requireAdmin } from "@/lib/admin/guard";
+import { obtenerDatosBaseAdmin } from "@/lib/admin/server";
+import { construirFilasUsuarios } from "@/lib/admin/usuarios";
 
 export default async function UsuariosPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const { data: usuarios } = await supabase
-    .from("profiles")
-    .select("*, membresias(*)")
-    .eq("rol", "usuario")
-    .order("created_at", { ascending: false });
-
-  // Rachas de todos los usuarios en una sola consulta (para el badge 🔥).
-  const ids = (usuarios ?? []).map((u: { id: string }) => u.id);
-  let rachas: Record<string, EstadoRacha> = {};
-  try {
-    rachas = await getEstadosRachaUsuarios(ids);
-  } catch (e) {
-    console.error("Error cargando rachas de usuarios:", e);
-  }
+  await requireAdmin();
+  const { hoy, usuarios, dias } = await obtenerDatosBaseAdmin();
+  const filas = construirFilasUsuarios(usuarios, dias, hoy);
 
   return (
     <div className="space-y-6">
-      <UsuariosHeader />
-      <TablaUsuarios usuarios={usuarios ?? []} rachas={rachas} />
+      <PageHeader
+        titulo="Usuarios"
+        descripcion="Membresías, rachas y asistencia de cada miembro. Haz clic en una fila para abrir su ficha."
+        acciones={<DialogoNuevoUsuario />}
+      />
+      <ListaUsuarios filas={filas} hoy={hoy} />
     </div>
   );
 }

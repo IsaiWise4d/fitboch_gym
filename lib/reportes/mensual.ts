@@ -24,6 +24,12 @@ import {
   sumarDias,
   TZ_BOGOTA,
 } from "../racha/bogota";
+import {
+  ETIQUETA_ESTADO,
+  estadoMembresia,
+  etiquetaPlan,
+  membresiaActual,
+} from "../membresias/estado";
 
 // ---------------------------------------------------------------------------
 // Entrada
@@ -227,7 +233,7 @@ export interface ResumenReporte {
   membresiasVencenMes: number;
   ingresosMes: number;
   /** Usuarios por días entrenados (desc), máximo 10. */
-  topUsuarios: { nombre: string; dias: number; asistencia: number | null }[];
+  topUsuarios: { usuarioId: string; nombre: string; dias: number; asistencia: number | null }[];
   /** Ejercicios más registrados, máximo 10. */
   topEjercicios: { ejercicio: string; registros: number }[];
 }
@@ -355,12 +361,6 @@ function edadEn(fechaNacimiento: string | null, hoy: string): number | null {
   return edad;
 }
 
-function diferenciaDias(desde: string, hasta: string): number {
-  return Math.round(
-    (stringAFecha(hasta).getTime() - stringAFecha(desde).getTime()) / 86_400_000
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Racha
 // ---------------------------------------------------------------------------
@@ -414,32 +414,9 @@ export function calcularRachaMaximaEnRango(
 // Membresías
 // ---------------------------------------------------------------------------
 
-const ETIQUETA_PLAN: Record<string, string> = {
-  mensual: "Mensual",
-  trimestral: "Trimestral",
-  semestral: "Semestral",
-  anual: "Anual",
-};
-
-function etiquetaPlan(plan: string): string {
-  return ETIQUETA_PLAN[plan] ?? plan;
-}
-
-function membresiaVigente(membresias: MembresiaReporte[]): MembresiaReporte | null {
-  return (
-    membresias
-      .filter((m) => m.estado === "activa")
-      .sort((a, b) => b.fecha_fin.localeCompare(a.fecha_fin))[0] ?? null
-  );
-}
-
-/** Mismos umbrales que lib/utils/membresia.ts (≤7 días = por vencer). */
-function estadoMembresia(membresia: MembresiaReporte | null, hoy: string): string {
-  if (!membresia) return "Sin membresía";
-  const dias = diferenciaDias(hoy, membresia.fecha_fin);
-  if (dias < 0) return "Vencida";
-  if (dias <= 7) return "Por vencer";
-  return "Activa";
+/** Etiqueta del estado con las reglas compartidas (lib/membresias/estado.ts). */
+function textoEstadoMembresia(membresia: MembresiaReporte | null, hoy: string): string {
+  return ETIQUETA_ESTADO[estadoMembresia(membresia?.fecha_fin ?? null, hoy).clave];
 }
 
 // ---------------------------------------------------------------------------
@@ -629,7 +606,7 @@ export function construirReporteMensual(entrada: EntradaReporte): ReporteMensual
       .filter((p) => p.base > 0 && p.maximo > p.base)
       .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 
-    const membresia = membresiaVigente(usuario.membresias);
+    const membresia = membresiaActual(usuario.membresias);
 
     return {
       usuarioId: usuario.id,
@@ -646,7 +623,7 @@ export function construirReporteMensual(entrada: EntradaReporte): ReporteMensual
       cuentaActiva: usuario.activo,
       fechaRegistro: registro,
       plan: membresia ? etiquetaPlan(membresia.tipo_plan) : null,
-      estadoMembresia: estadoMembresia(membresia, hoy),
+      estadoMembresia: textoEstadoMembresia(membresia, hoy),
       membresiaFin: membresia?.fecha_fin ?? null,
       montoMembresia: membresia?.monto_pagado ?? null,
       diasEntrenados: diasConEjercicio.size,
@@ -865,6 +842,7 @@ export function construirReporteMensual(entrada: EntradaReporte): ReporteMensual
     membresiasVencenMes,
     ingresosMes,
     topUsuarios: activos.slice(0, 10).map((f) => ({
+      usuarioId: f.usuarioId,
       nombre: f.nombreCompleto,
       dias: f.diasEntrenados,
       asistencia: f.asistencia,

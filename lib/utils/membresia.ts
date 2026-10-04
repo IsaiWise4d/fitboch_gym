@@ -1,5 +1,5 @@
-import { differenceInDays, parseISO } from "date-fns";
 import { getHoyColombia, formatFechaColombia } from "@/lib/utils/fecha";
+import { estadoMembresia, etiquetaPlan } from "@/lib/membresias/estado";
 import type { EstadoMembresia } from "@/types/app";
 
 export function calcularEstadoMembresia(fechaFin: string): {
@@ -7,21 +7,11 @@ export function calcularEstadoMembresia(fechaFin: string): {
   diasRestantes: number;
   fechaFormateada: string;
 } {
-  const hoy = parseISO(getHoyColombia());
-  const fin = parseISO(fechaFin);
-  const diasRestantes = differenceInDays(fin, hoy);
+  // Umbrales compartidos con el panel admin y los reportes.
+  const { clave, diasRestantes } = estadoMembresia(fechaFin, getHoyColombia());
   const fechaFormateada = formatFechaColombia(fechaFin, "d 'de' MMMM, yyyy");
 
-  let estado: EstadoMembresia;
-  if (diasRestantes < 0) {
-    estado = "vencida";
-  } else if (diasRestantes <= 7) {
-    estado = "por_vencer";
-  } else {
-    estado = "activa";
-  }
-
-  return { estado, diasRestantes, fechaFormateada };
+  return { estado: clave, diasRestantes: diasRestantes ?? 0, fechaFormateada };
 }
 
 export function getEstadoConfig(estado: EstadoMembresia) {
@@ -62,11 +52,5 @@ export function getEstadoConfig(estado: EstadoMembresia) {
 }
 
 export function formatTipoPlan(tipo: string): string {
-  const map: Record<string, string> = {
-    mensual: "Mensual",
-    trimestral: "Trimestral",
-    semestral: "Semestral",
-    anual: "Anual",
-  };
-  return map[tipo] || tipo;
+  return etiquetaPlan(tipo);
 }

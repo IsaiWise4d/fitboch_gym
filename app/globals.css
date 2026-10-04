@@ -54,6 +54,16 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
+
+  /* Estados de membresía para marcas de datos (barras, puntos, celdas).
+     Validado CVD contra --surface (ver skill dataviz): el verde es más
+     azulado que --success para separarse del ámbar en protanopía. */
+  --color-estado-activa: var(--estado-activa);
+  --color-estado-por-vencer: var(--estado-por-vencer);
+  --color-estado-vencida: var(--estado-vencida);
+  --color-estado-sin: var(--estado-sin);
+  --color-estado-desactivado: var(--estado-desactivado);
+  --color-panel: var(--panel);
 }
 
 /* FitBoch dark gym theme — dark only, no light mode */
@@ -84,6 +94,15 @@
   --success: #22C55E;
   --warning: #F59E0B;
   --error: #EF4444;
+
+  /* Datos */
+  --estado-activa: #10B981;
+  --estado-por-vencer: #F59E0B;
+  --estado-vencida: #EF4444;
+  --estado-sin: #6B6B6B;
+  --estado-desactivado: #3A3A3A;
+  /* Capa de paneles del admin, un paso sobre el fondo. */
+  --panel: #121212;
 
   /* Charts */
   --chart-1: #f9c633;
@@ -136,6 +155,13 @@
   --chart-4: #F59E0B;
   --chart-5: #3B82F6;
 
+  --estado-activa: #10B981;
+  --estado-por-vencer: #F59E0B;
+  --estado-vencida: #EF4444;
+  --estado-sin: #6B6B6B;
+  --estado-desactivado: #3A3A3A;
+  --panel: #121212;
+
   --sidebar: #111111;
   --sidebar-foreground: #FFFFFF;
   --sidebar-primary: #f9c633;
@@ -181,6 +207,20 @@
   input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
+  }
+
+  /* Superficies del navegador con la paleta: selección, cursor y scrollbars. */
+  ::selection {
+    background-color: rgb(249 198 51 / 0.3);
+    color: #ffffff;
+  }
+  input,
+  textarea {
+    caret-color: var(--primary);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #2f2f2f transparent;
   }
 
   /* Foco visible solo con teclado, coherente con el color de marca. */

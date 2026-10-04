@@ -9,9 +9,7 @@ export * from "./reglas";
 export * from "./mensajes";
 export {
   getEstadoRacha,
-  getEstadosRachaUsuarios,
   getInicioRacha,
-  getResumenAdminRacha,
   getResumenRacha,
   getCalendarioMes,
   evaluarActivacionRacha,

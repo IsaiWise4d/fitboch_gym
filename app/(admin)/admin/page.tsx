@@ -1,219 +1,132 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Users, AlertTriangle, XCircle, UserCheck, Cake } from "lucide-react";
-import { addDays, parseISO } from "date-fns";
 import Link from "next/link";
-import { formatFechaColombia, getHoyColombia } from "@/lib/utils/fecha";
+import { FileSpreadsheet } from "lucide-react";
+
+import { DistribucionMembresias } from "@/components/admin/panel/DistribucionMembresias";
+import { GraficoAsistencia } from "@/components/admin/panel/GraficoAsistencia";
+import { GraficoHorasPico } from "@/components/admin/panel/GraficoHorasPico";
+import { ListaAtencion } from "@/components/admin/panel/ListaAtencion";
+import {
+  ActividadHoy,
+  Cumpleanos,
+  TopRachas,
+  UltimosRegistros,
+} from "@/components/admin/panel/ListasPanel";
+import { DialogoNuevoUsuario } from "@/components/admin/usuarios/DialogoNuevoUsuario";
+import { BotonActualizar } from "@/components/admin/ui/BotonActualizar";
+import { FranjaKpi, type Kpi } from "@/components/admin/ui/FranjaKpi";
+import { PageHeader } from "@/components/admin/ui/PageHeader";
+import { Button } from "@/components/ui/button";
+import { requireAdmin } from "@/lib/admin/guard";
+import { construirPanel } from "@/lib/admin/panel";
+import { obtenerDatosBaseAdmin } from "@/lib/admin/server";
+import { fechaLarga, formatoNumero } from "@/lib/utils/formato";
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { nombre } = await requireAdmin();
+  const { hoy, usuarios, dias } = await obtenerDatosBaseAdmin();
+  const panel = construirPanel({ hoy, usuarios, dias });
+  const { kpis } = panel;
 
-  if (!user) {
-    redirect("/login");
-  }
+  const variacionPromedio =
+    kpis.promedioDiario7 !== null && kpis.promedioDiario7Anterior
+      ? (kpis.promedioDiario7 - kpis.promedioDiario7Anterior) / kpis.promedioDiario7Anterior
+      : null;
+  const porcentajeHoy =
+    kpis.miembrosVigentes > 0 ? Math.round((kpis.entrenaronHoy / kpis.miembrosVigentes) * 100) : null;
 
-  const hoy = getHoyColombia();
-  const en7dias = formatFechaColombia(addDays(parseISO(hoy), 7), "yyyy-MM-dd");
-
-  // Consultas en paralelo
-  const [
-    { count: totalUsuarios },
-    { count: membresiaActivas },
-    { data: porVencer },
-    { count: vencidas },
-    { data: ultimosRegistros },
-    { data: perfilesCumples },
-  ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("rol", "usuario").eq("activo", true),
-    supabase.from("membresias").select("*", { count: "exact", head: true }).eq("estado", "activa").gte("fecha_fin", hoy),
-    supabase
-      .from("membresias")
-      .select("*, profiles!inner(nombre, apellido, email)")
-      .eq("estado", "activa")
-      .lte("fecha_fin", en7dias)
-      .gte("fecha_fin", hoy),
-    supabase.from("membresias").select("*", { count: "exact", head: true }).eq("estado", "activa").lt("fecha_fin", hoy),
-    supabase
-      .from("profiles")
-      .select("id, nombre, apellido, email, created_at")
-      .eq("rol", "usuario")
-      .eq("activo", true)
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("profiles")
-      .select("id, nombre, apellido, email, fecha_nacimiento")
-      .eq("rol", "usuario")
-      .eq("activo", true)
-      .not("fecha_nacimiento", "is", null),
-  ]);
-
-  const metricas = [
+  const indicadores: Kpi[] = [
     {
-      label: "Total usuarios",
-      valor: totalUsuarios ?? 0,
-      icon: Users,
-      color: "text-blue-400",
+      etiqueta: "Miembros vigentes",
+      valor: kpis.miembrosVigentes,
+      contexto: `de ${kpis.usuariosActivos} cuentas activas`,
+      href: "/admin/usuarios",
     },
     {
-      label: "Membresías activas",
-      valor: membresiaActivas ?? 0,
-      icon: UserCheck,
-      color: "text-success",
+      etiqueta: "Entrenaron hoy",
+      valor: kpis.entrenaronHoy,
+      contexto: panel.esDomingo
+        ? "Domingo · día libre"
+        : porcentajeHoy !== null
+          ? `${porcentajeHoy}% de los vigentes`
+          : "Sin miembros vigentes",
+      href: "#actividad-hoy",
     },
     {
-      label: "Por vencer (7 días)",
-      valor: porVencer?.length ?? 0,
-      icon: AlertTriangle,
-      color: "text-warning",
+      etiqueta: "Promedio diario",
+      valor: kpis.promedioDiario7 === null ? "—" : formatoNumero(kpis.promedioDiario7, 1),
+      delta: variacionPromedio,
+      etiquetaDelta: "vs semana previa",
+      contexto: variacionPromedio === null ? "usuarios por día hábil, 7 días" : undefined,
     },
     {
-      label: "Membresías vencidas",
-      valor: vencidas ?? 0,
-      icon: XCircle,
-      color: "text-error",
+      etiqueta: "Por vencer",
+      valor: kpis.porVencer,
+      contexto: "en los próximos 7 días",
+      tono: kpis.porVencer > 0 ? "advertencia" : "neutro",
+      href: "/admin/usuarios?estado=por_vencer",
+    },
+    {
+      etiqueta: "Vencidas",
+      valor: kpis.vencidas,
+      contexto: `${kpis.vencidasRecientes} en los últimos 30 días`,
+      tono: kpis.vencidas > 0 ? "peligro" : "neutro",
+      href: "/admin/usuarios?estado=vencida",
+    },
+    {
+      etiqueta: "Sin membresía",
+      valor: kpis.sinMembresia,
+      contexto: "cuentas activas sin plan",
+      href: "/admin/usuarios?estado=sin_membresia",
     },
   ];
 
+  const fechaHoy = fechaLarga(hoy);
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Panel de Administración</h1>
+      <PageHeader
+        titulo={`Hola, ${nombre.split(" ")[0]}`}
+        descripcion={`${fechaHoy.charAt(0).toUpperCase()}${fechaHoy.slice(1)} · así va el gimnasio hoy`}
+        acciones={
+          <>
+            <BotonActualizar />
+            <Button variant="outline" nativeButton={false} render={<Link href="/admin/reportes" />}>
+              <FileSpreadsheet aria-hidden="true" />
+              Reporte del mes
+            </Button>
+            <DialogoNuevoUsuario />
+          </>
+        }
+      />
 
-      {/* Métricas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {metricas.map((m, i) => {
-          const Icon = m.icon;
-          return (
-            <div
-              key={m.label}
-              className="rounded-lg border border-border bg-surface p-4 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{m.label}</p>
-                <Icon className={`h-4 w-4 ${m.color}`} />
-              </div>
-              <p className="text-2xl font-bold tabular-nums">{m.valor}</p>
-            </div>
-          );
-        })}
+      <FranjaKpi kpis={indicadores} />
+
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="xl:col-span-8">
+          <GraficoAsistencia datos={panel.asistenciaDiaria} hoy={hoy} />
+        </div>
+        <div className="xl:col-span-4">
+          <DistribucionMembresias distribucion={panel.distribucion} />
+        </div>
+
+        <div className="xl:col-span-7">
+          <ListaAtencion atencion={panel.atencion} />
+        </div>
+        <div className="xl:col-span-5">
+          <ActividadHoy filas={panel.actividadHoy} esDomingo={panel.esDomingo} />
+        </div>
+
+        <div className="xl:col-span-5">
+          <GraficoHorasPico horas={panel.horasPico} />
+        </div>
+        <div className="xl:col-span-3">
+          <TopRachas filas={panel.topRachas} />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 xl:col-span-4 xl:grid-cols-1">
+          <Cumpleanos filas={panel.cumpleanos} />
+          <UltimosRegistros filas={panel.ultimosRegistros} hoy={hoy} />
+        </div>
       </div>
-
-      {/* Próximos cumpleaños */}
-      {perfilesCumples && perfilesCumples.length > 0 && (() => {
-        const [hY, hM, hD] = hoy.split("-").map(Number);
-        const hoyUtc = Date.UTC(hY, hM - 1, hD);
-        const sorted = [...perfilesCumples]
-          .map((p) => {
-            const [, nM, nD] = p.fecha_nacimiento!.split("-").map(Number);
-            let cumpleY = hY;
-            if (nM < hM || (nM === hM && nD < hD)) cumpleY = hY + 1;
-            const cumpleUtc = Date.UTC(cumpleY, nM - 1, nD);
-            const diasRestantes = Math.round((cumpleUtc - hoyUtc) / 86_400_000);
-            const proximoCumple = `${cumpleY}-${String(nM).padStart(2, "0")}-${String(nD).padStart(2, "0")}`;
-            return { ...p, proximoCumple, diasRestantes };
-          })
-          .sort((a, b) => a.diasRestantes - b.diasRestantes)
-          .slice(0, 5);
-
-        return (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Cake className="h-5 w-5 text-primary" />
-              Próximos cumpleaños
-            </h2>
-            <div className="rounded-lg border border-border bg-surface divide-y divide-border">
-              {sorted.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/admin/usuarios/${p.id}`}
-                  className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {p.nombre} {p.apellido || ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{p.email}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {formatFechaColombia(p.proximoCumple, "d MMM")}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.diasRestantes === 0 ? "¡Hoy!" : `en ${p.diasRestantes} día${p.diasRestantes !== 1 ? "s" : ""}`}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Por vencer */}
-      {porVencer && porVencer.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-warning" />
-            Membresías por vencer
-          </h2>
-          <div className="rounded-lg border border-border bg-surface divide-y divide-border">
-            {porVencer.map((m) => (
-              <Link
-                key={m.id}
-                href={`/admin/usuarios/${m.usuario_id}`}
-                className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-              >
-                <div>
-                  <p className="text-sm font-medium">
-                    {m.profiles.nombre} {m.profiles.apellido || ""}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {m.profiles.email}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-warning font-medium">
-                    Vence {formatFechaColombia(m.fecha_fin, "d MMM")}
-                  </p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {m.tipo_plan}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Últimos registros */}
-      {ultimosRegistros && ultimosRegistros.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Últimos registros</h2>
-          <div className="rounded-lg border border-border bg-surface divide-y divide-border">
-            {ultimosRegistros.map((u) => (
-              <Link
-                key={u.id}
-                href={`/admin/usuarios/${u.id}`}
-                className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-              >
-                <div>
-                  <p className="text-sm font-medium">
-                    {u.nombre} {u.apellido || ""}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{u.email}</p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {formatFechaColombia(u.created_at, "d MMM yyyy")}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

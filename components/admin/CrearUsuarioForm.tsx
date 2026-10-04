@@ -1,20 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CheckCircle2, Loader2, UserPlus } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, UserPlus, X } from "lucide-react";
 
-export function CrearUsuarioForm({ onClose }: { onClose: () => void }) {
+interface CrearUsuarioFormProps {
+  /** Se llama tras crear el usuario (antes de mostrar sus credenciales). */
+  onCreado?: (usuarioId: string) => void;
+  onCerrar?: () => void;
+}
+
+/** Formulario de alta: nombre, email y cédula (contraseña inicial). */
+export function CrearUsuarioForm({ onCreado, onCerrar }: CrearUsuarioFormProps) {
   const router = useRouter();
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [cedula, setCedula] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [creado, setCreado] = useState<{ id: string; email: string; cedula: string } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,11 +52,9 @@ export function CrearUsuarioForm({ onClose }: { onClose: () => void }) {
       if (!res.ok) {
         setError(data.error || "Error al crear el usuario");
       } else {
-        setSuccess(true);
-        setTimeout(() => {
-          onClose();
-          router.refresh();
-        }, 1500);
+        setCreado({ id: data.usuario_id, email: email.trim().toLowerCase(), cedula: cedula.trim() });
+        onCreado?.(data.usuario_id);
+        router.refresh();
       }
     } catch {
       setError("Error de conexión");
@@ -56,75 +63,91 @@ export function CrearUsuarioForm({ onClose }: { onClose: () => void }) {
     }
   }
 
-  return (
-    <div className="rounded-lg border border-border bg-surface p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium flex items-center gap-2">
-          <UserPlus className="h-4 w-4 text-primary" />
-          Nuevo usuario
-        </p>
-        <button onClick={onClose}>
-          <X className="h-4 w-4 text-muted-foreground" />
-        </button>
-      </div>
+  function crearOtro() {
+    setNombre("");
+    setEmail("");
+    setCedula("");
+    setCreado(null);
+  }
 
-      {success ? (
-        <div className="rounded-md bg-success/10 p-3 text-sm text-success">
-          Usuario creado correctamente. Sus credenciales son:
-          <br />
-          <strong>Email:</strong> {email}
-          <br />
-          <strong>Contraseña:</strong> {cedula} (cédula)
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="space-y-2">
-            <Label>Nombre</Label>
-            <Input
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Nombre del usuario"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Correo electrónico</Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="usuario@email.com"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Cédula (será la contraseña inicial)</Label>
-            <Input
-              value={cedula}
-              onChange={(e) => setCedula(e.target.value)}
-              placeholder="12345678"
-            />
-            <p className="text-xs text-muted-foreground">
-              El usuario podrá cambiar su contraseña después
+  if (creado) {
+    return (
+      <div className="space-y-4">
+        <div className="flex gap-3 rounded-lg bg-success/10 p-3 text-sm">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-hidden="true" />
+          <div className="space-y-1">
+            <p className="font-medium text-success">Usuario creado. Comparte sus credenciales:</p>
+            <p className="text-foreground/90">
+              <span className="text-muted-foreground">Email:</span> {creado.email}
+            </p>
+            <p className="text-foreground/90">
+              <span className="text-muted-foreground">Contraseña:</span> {creado.cedula} (cédula)
             </p>
           </div>
-
-          {error && (
-            <div className="rounded-md bg-error/10 p-2 text-sm text-error">
-              {error}
-            </div>
-          )}
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <UserPlus className="h-4 w-4 mr-2" />
-            )}
-            Crear usuario
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={crearOtro}>
+            Crear otro
           </Button>
-        </form>
+          <Button
+            nativeButton={false}
+            render={<Link href={`/admin/usuarios/${creado.id}?renovar=1`} onClick={onCerrar} />}
+          >
+            Asignar membresía
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="nuevo-nombre">Nombre</Label>
+        <Input
+          id="nuevo-nombre"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          placeholder="Nombre del usuario"
+          autoComplete="off"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="nuevo-email">Correo electrónico</Label>
+        <Input
+          id="nuevo-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="usuario@email.com"
+          autoComplete="off"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="nuevo-cedula">Cédula (será la contraseña inicial)</Label>
+        <Input
+          id="nuevo-cedula"
+          value={cedula}
+          onChange={(e) => setCedula(e.target.value)}
+          placeholder="12345678"
+          inputMode="numeric"
+          autoComplete="off"
+        />
+        <p className="text-xs text-muted-foreground">El usuario podrá cambiar su contraseña después.</p>
+      </div>
+
+      {error && (
+        <p role="alert" className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">
+          {error}
+        </p>
       )}
-    </div>
+
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? <Loader2 className="animate-spin" /> : <UserPlus />}
+        Crear usuario
+      </Button>
+    </form>
   );
 }

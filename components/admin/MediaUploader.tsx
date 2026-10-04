@@ -24,10 +24,25 @@ type MediaUploaderProps = {
   url: string;
   tipo: "imagen" | "video" | null;
   onChange: (media: MediaSeleccionada | null) => void;
+  /** Carpeta del Blob (la ruta de subida solo acepta estas). */
+  carpeta?: "calentamientos" | "ejercicios";
+  etiqueta?: string;
+  /** Muestra un campo para pegar el enlace de una imagen/GIF/video ya publicado. */
+  permitirEnlace?: boolean;
 };
 
-export function MediaUploader({ url, tipo, onChange }: MediaUploaderProps) {
+const EXTENSION_VIDEO = /\.(mp4|webm|mov|m4v)(\?.*)?$/i;
+
+export function MediaUploader({
+  url,
+  tipo,
+  onChange,
+  carpeta = "calentamientos",
+  etiqueta = "Imagen o video",
+  permitirEnlace = false,
+}: MediaUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [enlace, setEnlace] = useState("");
   const [subiendo, setSubiendo] = useState(false);
   const [progreso, setProgreso] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +61,7 @@ export function MediaUploader({ url, tipo, onChange }: MediaUploaderProps) {
     setProgreso(0);
     try {
       const nombreLimpio = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").toLowerCase();
-      const blob = await upload(`calentamientos/${Date.now()}-${nombreLimpio}`, file, {
+      const blob = await upload(`${carpeta}/${Date.now()}-${nombreLimpio}`, file, {
         access: "public",
         handleUploadUrl: "/api/blob/upload",
         onUploadProgress: (progress) => setProgreso(Math.round(progress.percentage)),
@@ -71,7 +86,7 @@ export function MediaUploader({ url, tipo, onChange }: MediaUploaderProps) {
 
   return (
     <div className="space-y-2">
-      <Label>Imagen o video</Label>
+      <Label>{etiqueta}</Label>
       <input
         ref={inputRef}
         type="file"
@@ -131,6 +146,35 @@ export function MediaUploader({ url, tipo, onChange }: MediaUploaderProps) {
                 </span>
               </>
             )}
+          </button>
+        </div>
+      )}
+
+      {permitirEnlace && !url && !subiendo && (
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={enlace}
+            onChange={(event) => setEnlace(event.target.value)}
+            placeholder="…o pega el enlace de una imagen, GIF o video"
+            className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          <button
+            type="button"
+            disabled={!enlace.trim()}
+            onClick={() => {
+              const limpio = enlace.trim();
+              if (!/^https?:\/\//i.test(limpio)) {
+                setError("El enlace debe empezar por https://");
+                return;
+              }
+              setError(null);
+              onChange({ url: limpio, tipo: EXTENSION_VIDEO.test(limpio) ? "video" : "imagen" });
+              setEnlace("");
+            }}
+            className="h-9 shrink-0 rounded-lg border border-border px-3 text-sm text-foreground transition-colors hover:bg-white/[0.06] disabled:opacity-40"
+          >
+            Usar enlace
           </button>
         </div>
       )}

@@ -15,6 +15,8 @@ interface ConfirmDialogProps {
   textoConfirmar: string;
   textoCancelar?: string;
   cargando?: boolean;
+  /** Error de la acción, mostrado dentro del diálogo (el banner de la página queda detrás). */
+  error?: string | null;
   onConfirmar: () => void;
   onCancelar: () => void;
 }
@@ -34,6 +36,7 @@ export function ConfirmDialog({
   textoConfirmar,
   textoCancelar = "Cancelar",
   cargando = false,
+  error = null,
   onConfirmar,
   onCancelar,
 }: ConfirmDialogProps) {
@@ -94,6 +97,11 @@ export function ConfirmDialog({
         <div id={descripcionId} className="text-sm leading-relaxed text-muted-foreground">
           {descripcion}
         </div>
+        {error && (
+          <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3 pt-2">
           <Button
             ref={cancelarRef}

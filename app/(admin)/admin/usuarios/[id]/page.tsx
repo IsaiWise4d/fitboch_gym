@@ -1,43 +1,35 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
-import { UsuarioDetalle } from "@/components/admin/UsuarioDetalle";
-import { getResumenAdminRacha } from "@/lib/racha/server";
-import type { ResumenAdminRacha } from "@/lib/racha/types";
+import { notFound } from "next/navigation";
+
+import { UsuarioDetalle } from "@/components/admin/usuario/UsuarioDetalle";
+import { construirCalendarioActividad, metricasUsuario } from "@/lib/admin/actividad";
+import { requireAdmin } from "@/lib/admin/guard";
+import { obtenerActividadUsuario, SEMANAS_CALENDARIO_USUARIO } from "@/lib/admin/server";
+import type { DiaEntreno, RegistroReciente } from "@/lib/admin/tipos";
+import { getHoyColombia } from "@/lib/utils/fecha";
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ renovar?: string }>;
 }
 
-export default async function UsuarioDetallePage({ params }: Props) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default async function UsuarioDetallePage({ params, searchParams }: Props) {
+  const [{ id }, { renovar }] = await Promise.all([params, searchParams]);
+  const { cliente } = await requireAdmin();
+  const hoy = getHoyColombia();
 
-  if (!user) redirect("/login");
-
-  const [{ data: profile }, { data: membresias }, { data: rutinas }, { data: planes }, resumenRacha] =
+  const [{ data: profile }, { data: membresias }, { data: rutinas }, { data: planes }, actividad] =
     await Promise.all([
-      supabase.from("profiles").select("*").eq("id", id).single(),
-      supabase
-        .from("membresias")
-        .select("*")
-        .eq("usuario_id", id)
-        .order("fecha_fin", { ascending: false }),
-      supabase
+      cliente.from("profiles").select("*").eq("id", id).maybeSingle(),
+      cliente.from("membresias").select("*").eq("usuario_id", id).order("fecha_fin", { ascending: false }),
+      cliente
         .from("rutinas")
         .select("id, created_at, duracion_plan, estado, modelo_ia, texto_rutina")
         .eq("usuario_id", id)
         .order("created_at", { ascending: false }),
-      supabase
-        .from("planes_nutricionales")
-        .select("*")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false }),
-      getResumenAdminRacha(id).catch((e: unknown) => {
-        console.error("Error cargando racha del usuario:", e);
-        return null as ResumenAdminRacha | null;
+      cliente.from("planes_nutricionales").select("*").eq("user_id", id).order("created_at", { ascending: false }),
+      obtenerActividadUsuario(id, hoy).catch((e: unknown) => {
+        console.error("Error cargando actividad del usuario:", e);
+        return { dias: [] as DiaEntreno[], recientes: [] as RegistroReciente[] };
       }),
     ]);
 
@@ -49,7 +41,13 @@ export default async function UsuarioDetallePage({ params }: Props) {
       membresias={membresias ?? []}
       rutinas={rutinas ?? []}
       planesNutricionales={planes ?? []}
-      racha={resumenRacha}
+      hoy={hoy}
+      actividad={{
+        metricas: metricasUsuario(actividad.dias, hoy, { registro: profile.created_at }),
+        calendario: construirCalendarioActividad(actividad.dias, hoy, SEMANAS_CALENDARIO_USUARIO, profile.created_at),
+        recientes: actividad.recientes,
+      }}
+      abrirRenovar={renovar === "1"}
     />
   );
 }

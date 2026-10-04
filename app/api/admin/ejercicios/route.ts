@@ -1,90 +1,64 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+
+import { validarEjercicio } from "@/lib/admin/biblioteca";
+import { verificarAdminApi } from "@/lib/admin/guard";
+import type { Database } from "@/types/database";
+
+type InsertEjercicio = Database["public"]["Tables"]["ejercicios"]["Insert"];
+type UpdateEjercicio = Database["public"]["Tables"]["ejercicios"]["Update"];
 
 // Crear ejercicio
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const verificacion = await verificarAdminApi();
+    if (!verificacion.ok) return verificacion.respuesta;
 
-    if (!user) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    const validacion = validarEjercicio(await request.json().catch(() => null), false);
+    if (!validacion.ok) {
+      return NextResponse.json({ error: validacion.error }, { status: 400 });
     }
 
-    const { data: admin } = await supabase
-      .from("profiles")
-      .select("rol")
-      .eq("id", user.id)
+    const { data, error } = await verificacion.cliente
+      .from("ejercicios")
+      .insert(validacion.datos as InsertEjercicio)
+      .select("id")
       .single();
-
-    if (admin?.rol !== "admin") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
-
-    const body = await request.json();
-    const { nombre, descripcion, instrucciones, grupo_muscular, categoria, nivel, imagen_url, video_url } = body;
-
-    if (!nombre || !instrucciones || !grupo_muscular || !categoria) {
-      return NextResponse.json({ error: "Campos obligatorios faltantes" }, { status: 400 });
-    }
-
-    const { error } = await supabase.from("ejercicios").insert({
-      nombre,
-      descripcion: descripcion || null,
-      instrucciones,
-      grupo_muscular,
-      categoria,
-      nivel: nivel || "todos",
-      imagen_url: imagen_url || null,
-      video_url: video_url || null,
-    });
 
     if (error) {
       console.error("Error creando ejercicio:", error);
       return NextResponse.json({ error: "Error al crear el ejercicio" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
+    return NextResponse.json({ success: true, id: data.id }, { status: 201 });
+  } catch (error: unknown) {
     console.error("Error en ejercicios POST:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
-// Actualizar ejercicio
+// Actualizar ejercicio (solo los campos enviados y permitidos)
 export async function PUT(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const verificacion = await verificarAdminApi();
+    if (!verificacion.ok) return verificacion.respuesta;
 
-    if (!user) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const { data: admin } = await supabase
-      .from("profiles")
-      .select("rol")
-      .eq("id", user.id)
-      .single();
-
-    if (admin?.rol !== "admin") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
-
-    const body = await request.json();
-    const { id, ...fields } = body;
-
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+    const id = typeof body?.id === "string" ? body.id : "";
     if (!id) {
       return NextResponse.json({ error: "ID requerido" }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const validacion = validarEjercicio(body, true);
+    if (!validacion.ok) {
+      return NextResponse.json({ error: validacion.error }, { status: 400 });
+    }
+    if (Object.keys(validacion.datos).length === 0) {
+      return NextResponse.json({ error: "No hay cambios para guardar" }, { status: 400 });
+    }
+
+    const { error } = await verificacion.cliente
       .from("ejercicios")
-      .update(fields)
+      .update(validacion.datos as UpdateEjercicio)
       .eq("id", id);
 
     if (error) {
@@ -93,7 +67,7 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error en ejercicios PUT:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }

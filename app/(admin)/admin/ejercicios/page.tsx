@@ -1,25 +1,17 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { GestionEjercicios } from "@/components/admin/GestionEjercicios";
+import { requireAdmin } from "@/lib/admin/guard";
+import { obtenerUsoEjercicios } from "@/lib/admin/server";
 
 export default async function EjerciciosAdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { cliente } = await requireAdmin();
 
-  if (!user) redirect("/login");
+  const [{ data: ejercicios }, uso] = await Promise.all([
+    cliente.from("ejercicios").select("*").order("grupo_muscular").order("nombre"),
+    obtenerUsoEjercicios(30).catch((e: unknown) => {
+      console.error("Error leyendo uso de ejercicios:", e);
+      return {} as Record<string, number>;
+    }),
+  ]);
 
-  const { data: ejercicios } = await supabase
-    .from("ejercicios")
-    .select("*")
-    .order("grupo_muscular")
-    .order("nombre");
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Gestión de Ejercicios</h1>
-      <GestionEjercicios ejercicios={ejercicios ?? []} />
-    </div>
-  );
+  return <GestionEjercicios ejercicios={ejercicios ?? []} uso={uso} />;
 }

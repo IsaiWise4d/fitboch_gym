@@ -13,6 +13,9 @@ const ALLOWED_CONTENT_TYPES = [
   "video/quicktime",
 ];
 
+// Media de las bibliotecas del admin.
+const CARPETAS_PERMITIDAS = ["calentamientos", "ejercicios"];
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -32,7 +35,7 @@ export async function POST(request: Request) {
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
-        if (!pathname.startsWith("calentamientos/")) {
+        if (!CARPETAS_PERMITIDAS.some((carpeta) => pathname.startsWith(`${carpeta}/`))) {
           throw new Error("Ruta de archivo no permitida");
         }
         return {

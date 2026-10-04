@@ -3,14 +3,9 @@
 import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { normalizarTexto } from "@/lib/utils/texto";
 
-/** Minúsculas y sin tildes: "Bíceps" y "biceps" coinciden al buscar. */
-export function normalizarTexto(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
-}
+export { normalizarTexto };
 
 interface CampoBusquedaProps {
   valor: string;

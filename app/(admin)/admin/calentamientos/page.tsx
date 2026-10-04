@@ -1,22 +1,14 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { GestionCalentamientos } from "@/components/admin/GestionCalentamientos";
+import { requireAdmin } from "@/lib/admin/guard";
 
 export default async function CalentamientosAdminPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { cliente } = await requireAdmin();
 
-  const { data: calentamientos } = await supabase
+  const { data: calentamientos } = await cliente
     .from("calentamientos")
     .select("*")
     .order("categoria")
     .order("nombre");
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Gestión de Calentamientos</h1>
-      <GestionCalentamientos calentamientos={calentamientos ?? []} />
-    </div>
-  );
+  return <GestionCalentamientos calentamientos={calentamientos ?? []} />;
 }
