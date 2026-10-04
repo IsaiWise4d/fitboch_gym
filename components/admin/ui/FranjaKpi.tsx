@@ -44,7 +44,7 @@ function ContenidoKpi({ kpi }: { kpi: Kpi }) {
         {tono !== "neutro" && <span aria-hidden="true" className={cn("size-1.5 rounded-full", COLOR_TONO[tono])} />}
         {kpi.etiqueta}
       </div>
-      <div className="text-[1.75rem] leading-none font-semibold tracking-tight text-foreground">{kpi.valor}</div>
+      <div className="text-2xl leading-none font-semibold tracking-tight text-foreground sm:text-[1.75rem]">{kpi.valor}</div>
       <div className="flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
         {kpi.delta !== undefined && kpi.delta !== null && <Delta delta={kpi.delta} etiqueta={kpi.etiquetaDelta} />}
         {kpi.contexto}
@@ -69,7 +69,7 @@ export function FranjaKpi({ kpis, className }: { kpis: Kpi[]; className?: string
     >
       {kpis.map((kpi) => {
         const clases =
-          "group relative flex min-w-0 flex-col gap-2.5 bg-panel px-5 py-4 transition-colors duration-150";
+          "group relative flex min-w-0 flex-col gap-2 bg-panel px-4 py-3.5 transition-colors duration-150 sm:gap-2.5 sm:px-5 sm:py-4";
         return kpi.href ? (
           <Link
             key={kpi.etiqueta}
@@ -77,7 +77,7 @@ export function FranjaKpi({ kpis, className }: { kpis: Kpi[]; className?: string
             className={cn(clases, "hover:bg-surface focus-visible:bg-surface")}
           >
             <ContenidoKpi kpi={kpi} />
-            <span className="pointer-events-none absolute top-4 right-4 text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <span className="pointer-events-none absolute top-3.5 right-3.5 hidden text-muted-foreground opacity-0 sm:block sm:top-4 sm:right-4 transition-opacity duration-150 group-hover:opacity-100">
               <ArrowUpRight className="size-3.5" aria-hidden="true" />
             </span>
           </Link>

@@ -110,7 +110,7 @@ export function UsuarioDetalle({
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="min-w-0 xl:col-span-2">
           <Tabs defaultValue="resumen" className="gap-5">
             <TabsList variant="line" className="h-auto w-full justify-start gap-1 overflow-x-auto border-b border-border pb-px scrollbar-none">

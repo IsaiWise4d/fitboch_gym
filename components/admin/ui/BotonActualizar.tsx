@@ -18,9 +18,12 @@ export function BotonActualizar({ etiqueta = "Actualizar" }: { etiqueta?: string
       onClick={() => iniciar(() => router.refresh())}
       disabled={pendiente}
       aria-busy={pendiente}
+      aria-label={etiqueta}
+      title={etiqueta}
+      className="w-10 px-0 sm:w-auto sm:px-3"
     >
       <RefreshCw className={cn("size-4", pendiente && "animate-spin")} aria-hidden="true" />
-      {pendiente ? "Actualizando…" : etiqueta}
+      <span className="hidden sm:inline">{pendiente ? "Actualizando…" : etiqueta}</span>
     </Button>
   );
 }

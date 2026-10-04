@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { fechaCorta, textoHace } from "@/lib/utils/formato";
 
 const CLASE_FILA =
-  "flex items-center gap-3 px-5 py-2.5 transition-colors duration-150 hover:bg-white/[0.03]";
+  "flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-white/[0.03] sm:px-5";
 
 /** Quién registró ejercicios hoy, del más reciente al primero. */
 export function ActividadHoy({
@@ -51,10 +51,12 @@ export function ActividadHoy({
             <li key={f.usuarioId}>
               <Link href={`/admin/usuarios/${f.usuarioId}`} className={CLASE_FILA}>
                 <span className="w-11 shrink-0 text-xs tabular-nums text-muted-foreground">{f.hora}</span>
-                <AvatarIniciales nombre={f.nombre} className="size-7 text-[10px]" />
+                <AvatarIniciales nombre={f.nombre} className="hidden size-7 text-[10px] sm:inline-flex" />
                 <span className="min-w-0 flex-1 truncate text-sm text-foreground">{f.nombre}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {f.ejercicios} ejercicio{f.ejercicios === 1 ? "" : "s"}
+                <span className="shrink-0 text-xs text-muted-foreground" title={`${f.ejercicios} ejercicios`}>
+                  {f.ejercicios}
+                  <span className="hidden sm:inline"> ejercicio{f.ejercicios === 1 ? "" : "s"}</span>
+                  <span className="sm:hidden"> ej.</span>
                 </span>
                 {f.racha > 0 && (
                   <span className="inline-flex w-10 shrink-0 items-center justify-end gap-0.5 text-xs font-semibold tabular-nums text-orange-400">

@@ -23,7 +23,7 @@ export function TabEjercicios({ vista }: { vista: VistaReporte }) {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-12">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
       <Panel
         titulo="Ranking de ejercicios"
         descripcion={`${ranking.length} ejercicios distintos registrados`}

@@ -130,7 +130,7 @@ export function TabResumen({
     <div className="space-y-6">
       <FranjaKpi kpis={kpis} />
 
-      <div className="grid gap-6 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <Panel
           titulo="Usuarios por día"
           descripcion={

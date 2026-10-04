@@ -44,7 +44,7 @@ export function TabMembresias({ vista }: { vista: VistaReporte }) {
         ]}
       />
 
-      <div className="grid gap-6 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <Panel titulo="Nuevas por plan" descripcion="Cantidad e ingresos de las creadas en el mes" className="xl:col-span-4">
           {porPlan.size === 0 ? (
             <EstadoVacio titulo="Sin membresías nuevas" />

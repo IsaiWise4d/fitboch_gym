@@ -119,17 +119,20 @@ export function GraficoAsistencia({ datos, hoy }: { datos: PuntoAsistencia[]; ho
         </span>
       </div>
 
-      <table className="sr-only">
-        <caption>Usuarios que entrenaron por día, últimos {rango} días</caption>
-        <tbody>
-          {visibles.map((p) => (
-            <tr key={p.fecha}>
-              <th scope="row">{fechaConDia(p.fecha)}</th>
-              <td>{p.usuarios}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* sr-only en un div: una <table> ignora el ancho de 1px y desborda la página en móvil. */}
+      <div className="sr-only">
+        <table>
+          <caption>Usuarios que entrenaron por día, últimos {rango} días</caption>
+          <tbody>
+            {visibles.map((p) => (
+              <tr key={p.fecha}>
+                <th scope="row">{fechaConDia(p.fecha)}</th>
+                <td>{p.usuarios}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Panel>
   );
 }

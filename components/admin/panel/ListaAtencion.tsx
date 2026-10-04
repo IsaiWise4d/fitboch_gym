@@ -88,10 +88,11 @@ export function ListaAtencion({ atencion }: { atencion: DatosPanel["atencion"] }
           }))}
           valor={pestana}
           onCambio={setPestana}
-          className="max-w-full overflow-x-auto scrollbar-none"
+          className="grid w-full grid-cols-2 gap-0.5 sm:inline-flex sm:w-auto [&>button]:justify-center"
         />
       }
       sinPadding
+      accionesAnchas
       className="h-full"
     >
       {filas.length === 0 ? (
@@ -101,8 +102,8 @@ export function ListaAtencion({ atencion }: { atencion: DatosPanel["atencion"] }
           {filas.map((fila) => {
             const primerNombre = fila.nombre.split(" ")[0];
             return (
-              <li key={fila.usuarioId} className="group flex items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-white/[0.02]">
-                <AvatarIniciales nombre={fila.nombre} />
+              <li key={fila.usuarioId} className="group flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-white/[0.02] sm:px-5">
+                <AvatarIniciales nombre={fila.nombre} className="hidden sm:inline-flex" />
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/admin/usuarios/${fila.usuarioId}`}
@@ -130,9 +131,11 @@ export function ListaAtencion({ atencion }: { atencion: DatosPanel["atencion"] }
                       size="sm"
                       nativeButton={false}
                       render={<Link href={`/admin/usuarios/${fila.usuarioId}?renovar=1`} />}
+                      aria-label={`Renovar membresía de ${fila.nombre}`}
+                      className="size-8 px-0 sm:h-7 sm:w-auto sm:px-2.5"
                     >
                       <RefreshCw aria-hidden="true" />
-                      Renovar
+                      <span className="hidden sm:inline">Renovar</span>
                     </Button>
                   ) : (
                     <Link
