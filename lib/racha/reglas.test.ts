@@ -20,26 +20,39 @@ describe("reglas de racha", () => {
     expect(calcularRacha(set("2024-02-02"), "2024-02-02").currentCount).toBe(1);
   });
 
-  it("tolera un fallo, pero resetea después de dos fallos exigibles", () => {
+  it("tolera dos fallos exigibles seguidos y resetea al tercero", () => {
     expect(calcularRacha(set("2024-02-26", "2024-02-28"), "2024-02-28").currentCount).toBe(2);
-    expect(calcularRacha(set("2024-02-26"), "2024-02-29")).toMatchObject({
+    expect(calcularRacha(set("2024-02-26", "2024-02-29"), "2024-02-29").currentCount).toBe(2);
+    expect(calcularRacha(set("2024-02-26"), "2024-03-01")).toMatchObject({
       currentCount: 0,
       rota: true,
     });
   });
 
-  it("reinicia los fallos al cruzar domingo y calcula el riesgo", () => {
-    expect(calcularRacha(set("2024-02-23"), "2024-02-27")).toMatchObject({
+  it("el fin de semana es neutro: no reinicia los fallos y calcula el riesgo", () => {
+    // Mié, jue y vie fallados + lunes pendiente: 3 seguidos → rota.
+    expect(calcularRacha(set("2024-02-27"), "2024-03-04")).toMatchObject({
+      currentCount: 0,
+      rota: true,
+    });
+    // Jue y vie fallados (2 de protección usados) y hoy lunes pendiente.
+    expect(calcularRacha(set("2024-02-28"), "2024-03-04")).toMatchObject({
       currentCount: 1,
       enRiesgo: true,
       rota: false,
     });
+    // Un solo fallo no pone en riesgo.
+    expect(calcularRacha(set("2024-02-28", "2024-02-29"), "2024-03-04").enRiesgo).toBe(false);
   });
 
-  it("mantiene domingo como descanso, aunque exista un registro ese día", () => {
-    const estado = calcularRacha(set("2024-02-24", "2024-02-25"), "2024-02-25");
-    expect(estado).toMatchObject({ currentCount: 1, hoyActivado: false, esDomingo: true });
+  it("mantiene sábado y domingo como descanso, aunque exista un registro", () => {
+    const domingo = calcularRacha(set("2024-02-23", "2024-02-24", "2024-02-25"), "2024-02-25");
+    expect(domingo).toMatchObject({ currentCount: 1, hoyActivado: false, esDomingo: true });
+    const sabado = calcularRacha(set("2024-02-23", "2024-02-24"), "2024-02-24");
+    expect(sabado).toMatchObject({ currentCount: 1, hoyActivado: false, esDomingo: true });
+    expect(esDiaExigible(stringAFecha("2024-02-24"))).toBe(false);
     expect(esDiaExigible(stringAFecha("2024-02-25"))).toBe(false);
+    expect(esDiaExigible(stringAFecha("2024-02-23"))).toBe(true);
   });
 
   it("convierte timestamps a días Bogotá", () => {
@@ -52,7 +65,7 @@ describe("reglas de racha", () => {
       calcularMejorRacha(
         set("2024-02-26", "2024-02-27", "2024-02-28", "2024-03-01", "2024-03-02")
       )
-    ).toBe(5);
+    ).toBe(4);
     expect(calcularMejorRacha(set("2024-02-26", "2024-02-28"))).toBe(2);
   });
 
@@ -64,6 +77,7 @@ describe("reglas de racha", () => {
     expect(semana[1]).toMatchObject({ activado: false, esHoy: false });
     expect(semana[2]).toMatchObject({ esHoy: true, activado: true });
     expect(semana[3].futuro).toBe(true);
+    expect(semana[5]).toMatchObject({ fecha: "2024-03-02", exigible: false });
     expect(semana[6]).toMatchObject({ fecha: "2024-03-03", exigible: false });
     // Un domingo pertenece a la semana que empezó el lunes anterior.
     expect(semanaActual(set(), "2024-03-03")[0].fecha).toBe("2024-02-26");

@@ -33,71 +33,28 @@ const set = (...xs: string[]) => new Set<string>(xs);
   assertOK(r.currentCount === 1, "C2: 2 ejercicios mismo día → count=1");
 }
 
-// Caso 3: faltar 1 día exigible NO rompe (congelada).
-// 25=domingo, 26=lun activo, 27=mar fallado, 28=mié hoy activo
+// Caso 3: faltar 1 o 2 días exigibles seguidos NO rompe (protección).
 {
   const r = calcularRacha(set("2024-02-26", "2024-02-28"), "2024-02-28");
   assertOK(r.currentCount === 2, "C3: falta martes (1 día) → count=2 (no rompe)");
+  const r2 = calcularRacha(set("2024-02-26", "2024-02-29"), "2024-02-29");
+  assertOK(r2.currentCount === 2, "C3b: faltan mar+mié (2 días) → count=2 (no rompe)");
 }
 
-// Caso 4: faltar 2 consecutivos (sin domingo de por medio) resetea a 0.
-// 26=lun activo, 27=mar fallado, 28=mié fallado, 29=jue hoy activo
+// Caso 4: 3 fallos exigibles seguidos resetean a 0.
 {
-  const r = calcularRacha(set("2024-02-26", "2024-02-29"), "2024-02-29");
-  assertOK(r.currentCount === 1, "C4: mar+mié fallados, jueves activo → count=1 (vieja rota, nueva sub-racha)");
-  assertOK(r.rota === false, "C4: rota=false (hay nueva sub-racha)");
+  const r = calcularRacha(set("2024-02-26"), "2024-03-01");
+  assertOK(r.currentCount === 0 && r.rota === true, "C4: mar+mié+jue fallados, hoy vie pendiente → count=0, rota");
 }
 
-// Caso 4b: 2 fallos consecutivos y hoy también fallado/pending.
+// Caso 5: el fin de semana es neutro (no reinicia los fallos).
+//   Mié 28 activo, jue 29 y vie 1 fallados, sáb/dom neutros, lun 4 hoy pendiente.
 {
-  // 26=lun activo, 27=mar fall, 28=mié fall, 29=jue hoy PENDIENTE
-  const r = calcularRacha(set("2024-02-26"), "2024-02-29");
-  assertOK(r.currentCount === 0, "C4b: mar+mié fallados, hoy jueves pendiente → count=0");
-  assertOK(r.rota === true, "C4b: rota=true");
-}
-
-// Caso 5 (REGLA DEL DOMINGO): sábado fallado + lunes fallado, con domingo en
-// medio, NO rompe. Setup:
-//   Feb 2024: 23=vie (activo), 24=sáb (fallado), 25=dom (reset), 26=lun (fallado), 27=mar (hoy pendiente).
-//   Si la regla del domingo NO existiera, los 2 fallos (sáb+lun) romperían.
-//   Con la regla, el domingo resetea el contador → NO rompe. La racha vieja
-//   (solo vie 23) sigue viva, y ahora el lunes 26 fallo + martes 27 pendiente
-//   → enRiesgo=true.
-{
-  const r = calcularRacha(
-    set("2024-02-23"),
-    "2024-02-27"
-  );
-  assertOK(r.currentCount === 1, "C5: vie 23 activo, sáb fallado, dom reset, lun fallado, mar pendiente → count=1 (NO rompe)");
-  assertOK(r.rota === false, "C5: rota=false (sábado+lunes fallados, domingo interpuesto)");
-  assertOK(r.enRiesgo === true, "C5: enRiesgo=true (lunes fallado + martes pendiente en bloque de hoy)");
-}
-
-// Caso 5b: MISMO contexto pero martes HOY ACTIVADO. La racha vieja sigue viva
-// y el martes activa la sub-racha nueva (count=2: vie + mar).
-{
-  const r = calcularRacha(
-    set("2024-02-23", "2024-02-27"),
-    "2024-02-27"
-  );
-  assertOK(r.currentCount === 2, "C5b: vie 23 + mar 27 activado (sáb+lun fallados con dom interpuesto) → count=2");
-  assertOK(r.rota === false, "C5b: rota=false");
-  assertOK(r.hoyActivado === true, "C5b: hoyActivado=true");
-}
-
-// Caso 5c: Sábado fallado + martes hoy pendiente, con domingo Y lunes en medio.
-// Aquí el bloque semanal de HOY (martes) empieza el lunes; el sábado está en
-// el bloque anterior (cruzó un domingo). No se considera enRiesgo por
-// el sábado caído, pero SÍ entra en cuenta el lunes 26 si también está vacío.
-//    23=vie activo, 24=sáb fallado, 25=dom (reset fallos), 26=lun activo, 27=mar HOY pendiente.
-// → bloque de hoy solo incluye lunes(activado) → 0 fallos en bloque de hoy → no enRiesgo.
-{
-  const r = calcularRacha(
-    set("2024-02-23", "2024-02-26"),
-    "2024-02-27"
-  );
-  assertOK(r.currentCount === 2, "C5c: vie(23) + lunes(26) + martes(27 hoy pendiente) → count=2");
-  assertOK(r.enRiesgo === false, "C5c: sábado anterior fallado NO implica riesgo (lunes activado cierra el bloque)");
+  const r = calcularRacha(set("2024-02-28"), "2024-03-04");
+  assertOK(r.currentCount === 1 && r.rota === false, "C5: jue+vie fallados, lun pendiente → count=1");
+  assertOK(r.enRiesgo === true, "C5: enRiesgo=true (2 días de protección usados)");
+  const r2 = calcularRacha(set("2024-02-27"), "2024-03-04");
+  assertOK(r2.rota === true, "C5b: mié+jue+vie fallados cruzando fin de semana → rota");
 }
 
 // Caso 6: zona horaria — 21:00 Bogotá del lunes 26 = 02:00Z del martes 27.
@@ -108,29 +65,23 @@ const set = (...xs: string[]) => new Set<string>(xs);
   assertOK(s2.has("2024-02-27"), "C6b: 2024-02-27T05:00Z (medianoche Bogotá del martes) → 2024-02-27");
 }
 
-// Caso 7: domingo no exigible
+// Caso 7: sábado y domingo no exigibles
 {
-  assertOK(esDiaExigible(stringAFecha("2024-02-25")) === false, "C7: 2024-02-25 (domingo) NO exigible");
-  assertOK(esDiaExigible(stringAFecha("2024-02-26")) === true, "C7b: 2024-02-26 (lunes) exigible");
+  assertOK(esDiaExigible(stringAFecha("2024-02-24")) === false, "C7: sábado NO exigible");
+  assertOK(esDiaExigible(stringAFecha("2024-02-25")) === false, "C7b: domingo NO exigible");
+  assertOK(esDiaExigible(stringAFecha("2024-02-26")) === true, "C7c: lunes exigible");
 }
 
-// Caso 8: shouldResetStreak ajustable
+// Caso 8: shouldResetStreak
 {
-  assertOK(shouldResetStreak(0) === false, "C8: shouldResetStreak(0)=false");
-  assertOK(shouldResetStreak(1) === false, "C8b: shouldResetStreak(1)=false (tolerancia 1)");
-  assertOK(shouldResetStreak(2) === true, "C8c: shouldResetStreak(2)=true");
+  assertOK(shouldResetStreak(2) === false, "C8: shouldResetStreak(2)=false (protección)");
+  assertOK(shouldResetStreak(3) === true, "C8b: shouldResetStreak(3)=true");
 }
 
 // Caso 9: mejor racha histórica
 {
-  // 3 días seguidos, ruptura, luego 2 días.
   const m = calcularMejorRacha(new Set(["2024-02-26", "2024-02-27", "2024-02-28", "2024-03-01", "2024-03-02"]));
-  // Lun..vie (26..1-mar vie), sábado 2-mar activo → 5 seguidos? Sí, sin faltas.
-  assertOK(m === 5, "C9: mejor racha con 5 días seguidos = 5");
-
-  const m2 = calcularMejorRacha(new Set(["2024-02-26", "2024-02-28"]));
-  // Lunes 26 + miércoles 28 (falta martes 27 = 1 fallo tolerado) → 2 seguidos
-  assertOK(m2 === 2, "C9b: mejor racha con 1 fallo tolerado = 2");
+  assertOK(m === 4, "C9: lun-mar-mié-vie (sábado neutro) → 4");
 }
 
 if (fallados > 0) {

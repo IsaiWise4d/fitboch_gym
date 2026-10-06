@@ -13,7 +13,7 @@ export interface EstadoRacha {
   diasFalladosConsecutivos: number;
   /** true si el usuario ya registró ejercicio hoy (Bogotá). */
   hoyActivado: boolean;
-  /** true cuando hoy es domingo en Bogotá; es un día de descanso. */
+  /** true cuando hoy es sábado o domingo en Bogotá (día de descanso). */
   esDomingo: boolean;
   /** true si la racha está en riesgo (1 fallado + aún existe día exigible por venir). */
   enRiesgo: boolean;
@@ -29,7 +29,7 @@ export interface CalendarioRachaDia {
   fecha: string;
   /** Día del mes (1..31). */
   dia: number;
-  /** true si es día exigible (lun-sáb). false si es domingo (descanso). */
+  /** true si es día exigible (lun-vie). false si es sábado o domingo (descanso). */
   exigible: boolean;
   /** true si el usuario registró ejercicio ese día. */
   activado: boolean;
@@ -56,7 +56,7 @@ export interface DiaSemanaRacha {
   dia: number;
   /** "L", "M", "X", "J", "V", "S", "D". */
   letra: string;
-  /** false para el domingo (descanso). */
+  /** false para sábado y domingo (descanso). */
   exigible: boolean;
   /** true si ese día hubo al menos un ejercicio. */
   activado: boolean;

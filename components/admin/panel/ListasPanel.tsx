@@ -38,10 +38,10 @@ export function ActividadHoy({
       {filas.length === 0 ? (
         <EstadoVacio
           icono={<Dumbbell />}
-          titulo={esDomingo ? "Domingo: día libre" : "Aún nadie registra ejercicios hoy"}
+          titulo={esDomingo ? "Fin de semana: día libre" : "Aún nadie registra ejercicios hoy"}
           descripcion={
             esDomingo
-              ? "Los domingos no cuentan para la racha; quien entrene igual aparecerá aquí."
+              ? "Sábados y domingos no cuentan para la racha; quien entrene igual aparecerá aquí."
               : "Cuando un usuario guarde su primer ejercicio del día aparecerá en esta lista."
           }
         />

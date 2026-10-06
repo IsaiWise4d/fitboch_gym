@@ -216,7 +216,7 @@ function hojaResumen(libro: ExcelJS.Workbook, reporte: ReporteMensual, generado:
     resumen.promedioDiasPorUsuarioActivo,
     FORMATO_DECIMAL
   );
-  dato("Asistencia promedio (L-S)", resumen.asistenciaPromedio ?? "—", FORMATO_PORCENTAJE);
+  dato("Asistencia promedio (L-V)", resumen.asistenciaPromedio ?? "—", FORMATO_PORCENTAJE);
   dato("Día de la semana con más asistencia", resumen.diaSemanaMasActivo ?? "—");
   dato(
     "Día con más usuarios entrenando",
@@ -241,7 +241,7 @@ function hojaResumen(libro: ExcelJS.Workbook, reporte: ReporteMensual, generado:
     "Muy activo": "Muy activo (asistencia ≥ 80%)",
     Activo: "Activo (50% – 79%)",
     Irregular: "Irregular (1% – 49%)",
-    Inactivo: "Inactivo (no entrenó ningún día L-S)",
+    Inactivo: "Inactivo (no entrenó ningún día L-V)",
     "Sin datos": "Sin datos (sin días evaluables en el mes)",
   };
   (Object.keys(definiciones) as ClasificacionActividad[]).forEach((clave) => {
@@ -308,9 +308,9 @@ function hojaResumen(libro: ExcelJS.Workbook, reporte: ReporteMensual, generado:
 
   seccion("Notas");
   const notas = [
-    "Días exigibles: lunes a sábado. El domingo es descanso y no cuenta como fallo.",
-    "Asistencia = días L-S entrenados ÷ días L-S transcurridos desde el registro del usuario.",
-    `La racha solo cuenta ejercicios desde el ${formatearFechaLarga(FECHA_INICIO_RACHA)} (mismas reglas que la app: 1 fallo tolerado, 2 en la misma semana la reinician).`,
+    "Días exigibles: lunes a viernes. Sábado y domingo son descanso y no cuentan como fallo.",
+    "Asistencia = días L-V entrenados ÷ días L-V transcurridos desde el registro del usuario.",
+    `La racha solo cuenta ejercicios desde el ${formatearFechaLarga(FECHA_INICIO_RACHA)} (mismas reglas que la app: 2 fallos tolerados, el tercero seguido la reinicia).`,
     "Récords superados: ejercicios en los que el peso máximo del mes superó la marca anterior del usuario.",
     "Fechas y horas en zona horaria de Colombia (America/Bogota).",
   ];
@@ -345,8 +345,8 @@ function hojaUsuarios(libro: ExcelJS.Workbook, reporte: ReporteMensual) {
     { titulo: "Vence", ancho: 12, valor: (f) => fechaExcel(f.membresiaFin), formato: FORMATO_FECHA },
     { titulo: "Monto membresía", ancho: 15, valor: (f) => f.montoMembresia, formato: FORMATO_DINERO },
     { titulo: "Días entrenados", ancho: 11, valor: (f) => f.diasEntrenados, formato: FORMATO_ENTERO, centrar: true },
-    { titulo: "Días L-S cumplidos", ancho: 11, valor: (f) => f.diasExigiblesCumplidos, formato: FORMATO_ENTERO, centrar: true },
-    { titulo: "Días L-S evaluados", ancho: 11, valor: (f) => f.diasExigiblesTranscurridos, formato: FORMATO_ENTERO, centrar: true },
+    { titulo: "Días L-V cumplidos", ancho: 11, valor: (f) => f.diasExigiblesCumplidos, formato: FORMATO_ENTERO, centrar: true },
+    { titulo: "Días L-V evaluados", ancho: 11, valor: (f) => f.diasExigiblesTranscurridos, formato: FORMATO_ENTERO, centrar: true },
     { titulo: "Días fallados", ancho: 10, valor: (f) => f.diasFallados, formato: FORMATO_ENTERO, centrar: true },
     { titulo: "Asistencia", ancho: 11, valor: (f) => f.asistencia, formato: FORMATO_PORCENTAJE, centrar: true },
     {
@@ -415,7 +415,7 @@ function hojaAsistencia(libro: ExcelJS.Workbook, reporte: ReporteMensual) {
     const nombre = NOMBRES_DIA_SEMANA[new Date(`${dia}T12:00:00Z`).getUTCDay()];
     filaSemana.getCell(i + 2).value = nombre === "Miércoles" ? "X" : nombre.charAt(0);
   });
-  filaDia.getCell(colTotales).value = "Días L-S cumplidos";
+  filaDia.getCell(colTotales).value = "Días L-V cumplidos";
   filaDia.getCell(colTotales + 1).value = "Fallos";
   filaDia.getCell(colTotales + 2).value = "Asistencia";
   for (let c = 1; c <= colTotales + 2; c++) {
@@ -463,10 +463,10 @@ function hojaAsistencia(libro: ExcelJS.Workbook, reporte: ReporteMensual) {
   hoja.getCell(fila, 1).font = { bold: true };
   fila++;
   const leyenda: [EstadoDiaAsistencia, string][] = [
-    ["entreno", "Entrenó (lunes a sábado)"],
-    ["domingo_entreno", "Entrenó en domingo (no exigible)"],
+    ["entreno", "Entrenó (lunes a viernes)"],
+    ["domingo_entreno", "Entrenó en fin de semana (no exigible)"],
     ["fallo", "No entrenó un día exigible"],
-    ["descanso", "Domingo de descanso"],
+    ["descanso", "Fin de semana (descanso)"],
     ["fuera", "Antes de que el usuario se registrara"],
   ];
   for (const [estado, texto] of leyenda) {

@@ -41,7 +41,7 @@ export function PanelInicio({ panel, nombre }: { panel: DatosPanel; nombre: stri
       etiqueta: "Entrenaron hoy",
       valor: kpis.entrenaronHoy,
       contexto: panel.esDomingo
-        ? "Domingo · día libre"
+        ? "Fin de semana · día libre"
         : porcentajeHoy !== null
           ? `${porcentajeHoy}% de los vigentes`
           : "Sin miembros vigentes",

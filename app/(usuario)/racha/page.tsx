@@ -83,7 +83,7 @@ export default async function RachaPage({
       <div className="space-y-1">
         <h1 className="text-xl font-bold tracking-tight">Racha</h1>
         <p className="text-sm text-muted-foreground">
-          Tu constancia día a día. Entrena de lunes a sábado para mantenerla.
+          Tu constancia día a día. Entrena de lunes a viernes para mantenerla.
         </p>
       </div>
 
@@ -108,17 +108,17 @@ const REGLAS_RACHA = [
   {
     icono: CircleCheck,
     color: "bg-orange-500/15 text-orange-400",
-    texto: "Registra al menos un ejercicio de lunes a sábado para sumar un día.",
+    texto: "Registra al menos un ejercicio de lunes a viernes para sumar un día.",
   },
   {
     icono: Coffee,
     color: "bg-white/10 text-foreground",
-    texto: "El domingo es descanso: no suma ni rompe tu racha.",
+    texto: "El sábado y el domingo son descanso: no suman ni rompen tu racha.",
   },
   {
     icono: RotateCcw,
     color: "bg-amber-500/15 text-amber-300",
-    texto: "Puedes fallar un día. Si fallas dos seguidos (sin un domingo en medio), la racha vuelve a cero.",
+    texto: "Tienes 2 días de protección: puedes fallar hasta dos días seguidos de lunes a viernes. Al tercero seguido, la racha vuelve a cero.",
   },
 ];
 

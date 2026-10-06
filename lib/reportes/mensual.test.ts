@@ -94,9 +94,9 @@ describe("utilidades de mes", () => {
 describe("calcularRachaMaximaEnRango", () => {
   it("continúa la racha que viene del mes anterior", () => {
     const activados = new Set(["2026-08-27", "2026-08-28", "2026-08-29", "2026-09-01"]);
-    // Lunes 31 fallado (tolerado) → el martes 1 sube la racha a 4.
-    expect(calcularRachaMaximaEnRango(activados, "2026-09-01", "2026-09-30")).toBe(4);
-    expect(calcularRachaMaximaEnRango(activados, "2026-08-01", "2026-08-31")).toBe(3);
+    // Sábado neutro y lunes 31 fallado (tolerado) → el martes 1 sube la racha a 3.
+    expect(calcularRachaMaximaEnRango(activados, "2026-09-01", "2026-09-30")).toBe(3);
+    expect(calcularRachaMaximaEnRango(activados, "2026-08-01", "2026-08-31")).toBe(2);
   });
 
   it("devuelve 0 si no hubo activaciones dentro del rango", () => {
@@ -127,9 +127,9 @@ describe("construirReporteMensual", () => {
     expect(reporte.nombreMes).toBe("Septiembre 2026");
     expect(fila.diasEntrenados).toBe(3);
     expect(fila.diasExigiblesCumplidos).toBe(2);
-    expect(fila.diasExigiblesTranscurridos).toBe(26);
-    expect(fila.diasFallados).toBe(24);
-    expect(fila.asistencia).toBeCloseTo(2 / 26);
+    expect(fila.diasExigiblesTranscurridos).toBe(22);
+    expect(fila.diasFallados).toBe(20);
+    expect(fila.asistencia).toBeCloseTo(2 / 22);
     expect(fila.clasificacion).toBe("Irregular");
     expect(fila.rachaCierre).toBe(0);
     expect(fila.mejorRachaMes).toBe(3);
@@ -213,8 +213,8 @@ describe("construirReporteMensual", () => {
     const f = nuevo.usuarios[0];
     expect(f.asistenciaDias[0]).toBe("fuera");
     expect(f.asistenciaDias[18]).toBe("fuera");
-    // Del 20 (domingo) al 30: 9 días L-S evaluables, todos fallados.
-    expect(f.diasExigiblesTranscurridos).toBe(9);
+    // Del 20 (domingo) al 30: 8 días L-V evaluables, todos fallados.
+    expect(f.diasExigiblesTranscurridos).toBe(8);
     expect(f.clasificacion).toBe("Inactivo");
     expect(f.estadoMembresia).toBe("Sin membresía");
   });

@@ -108,9 +108,9 @@ export type ClasificacionActividad =
 
 /**
  * Estado de un usuario en un día del mes (hoja "Asistencia"):
- * - entreno: día L-S con ejercicio.
- * - fallo: día L-S ya transcurrido sin ejercicio.
- * - domingo_entreno / descanso: domingo con o sin ejercicio (no exigible).
+ * - entreno: día L-V con ejercicio.
+ * - fallo: día L-V ya transcurrido sin ejercicio.
+ * - domingo_entreno / descanso: fin de semana con o sin ejercicio (no exigible).
  * - pendiente: hoy sin registrar todavía, o un día futuro.
  * - fuera: antes de que el usuario se registrara.
  */
@@ -135,11 +135,11 @@ export interface FilaUsuarioReporte {
   estadoMembresia: string;
   membresiaFin: string | null;
   montoMembresia: number | null;
-  /** Días distintos con al menos un ejercicio (incluye domingos). */
+  /** Días distintos con al menos un ejercicio (incluye fines de semana). */
   diasEntrenados: number;
-  /** Días L-S con ejercicio. */
+  /** Días L-V con ejercicio. */
   diasExigiblesCumplidos: number;
-  /** Días L-S transcurridos en los que el usuario podía entrenar. */
+  /** Días L-V transcurridos en los que el usuario podía entrenar. */
   diasExigiblesTranscurridos: number;
   diasFallados: number;
   /** cumplidos / transcurridos (0..1), null si no hubo días evaluables. */
@@ -369,8 +369,8 @@ function edadEn(fechaNacimiento: string | null, hoy: string): number | null {
  * Racha más alta alcanzada en algún día activado dentro de [desde, hasta].
  *
  * Recorre los días desde la primera activación con las mismas reglas que
- * `calcularMejorRacha` (domingo neutro, 1 fallo tolerado, 2 fallos en la
- * misma semana resetean), de modo que una racha que viene del mes anterior
+ * `calcularMejorRacha` (fin de semana neutro, 2 fallos tolerados, 3
+ * seguidos resetean), de modo que una racha que viene del mes anterior
  * sigue sumando dentro del mes.
  */
 export function calcularRachaMaximaEnRango(
@@ -393,7 +393,7 @@ export function calcularRachaMaximaEnRango(
     guardias++;
     const fecha = fechaAString(cursor);
     if (!esDiaExigible(cursor)) {
-      consecutiveMissed = 0;
+      // Fin de semana neutro.
     } else if (activados.has(fecha)) {
       count += 1;
       consecutiveMissed = 0;

@@ -88,7 +88,7 @@ export interface MetricasUsuario {
   entrenoHoy: boolean;
   /** Días con ejercicio en los últimos 30 días (incluye domingos). */
   dias30: number;
-  /** Días exigibles (lun-sáb) ya transcurridos en la ventana de 30 días. */
+  /** Días exigibles (lun-vie) ya transcurridos en la ventana de 30 días. */
   exigibles30: number;
   /** Exigibles cumplidos / exigibles transcurridos (0..1); null si no hay. */
   asistencia30: number | null;

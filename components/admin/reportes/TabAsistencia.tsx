@@ -11,9 +11,9 @@ import { normalizarTexto } from "@/lib/utils/texto";
 
 const ESTILO_DIA: Record<EstadoDiaAsistencia, { clase: string; etiqueta: string }> = {
   entreno: { clase: "bg-primary", etiqueta: "Entrenó" },
-  domingo_entreno: { clase: "bg-primary/45", etiqueta: "Entrenó (domingo)" },
+  domingo_entreno: { clase: "bg-primary/45", etiqueta: "Entrenó (fin de semana)" },
   fallo: { clase: "bg-estado-vencida/70", etiqueta: "Faltó (día hábil)" },
-  descanso: { clase: "bg-white/[0.06]", etiqueta: "Domingo de descanso" },
+  descanso: { clase: "bg-white/[0.06]", etiqueta: "Fin de semana (descanso)" },
   pendiente: { clase: "ring-1 ring-inset ring-white/15", etiqueta: "Pendiente / futuro" },
   fuera: { clase: "bg-transparent", etiqueta: "Antes de registrarse" },
 };
@@ -120,7 +120,7 @@ export function TabAsistencia({ usuarios, dias }: { usuarios: FilaUsuarioReporte
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        Asistencia = días hábiles (lun–sáb) entrenados sobre los transcurridos desde el registro. Los domingos
+        Asistencia = días hábiles (lun–vie) entrenados sobre los transcurridos desde el registro. Los sábados y domingos
         nunca cuentan como falta.
       </p>
     </div>

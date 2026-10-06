@@ -243,7 +243,7 @@ export async function contarEjerciciosHoy(
 
 /**
  * ¿El ejercicio recién guardado "activó" la racha hoy? Es decir:
- *   - es día exigible (lun-sáb), y
+ *   - es día exigible (lun-vie), y
  *   - antes de este registro NO había ningún ejercicio hoy → éste es el 1º.
  *
  * `historialId` es el id (UUID) del registro recién insertado, para

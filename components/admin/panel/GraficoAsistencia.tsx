@@ -38,7 +38,7 @@ function TooltipAsistencia({
       <p className="mt-0.5 text-muted-foreground">
         <span className="font-semibold text-foreground tabular-nums">{punto.usuarios}</span>{" "}
         usuario{punto.usuarios === 1 ? "" : "s"} entrenaron
-        {punto.domingo ? " · domingo" : punto.fecha === hoy ? " · día en curso" : ""}
+        {punto.domingo ? " · fin de semana" : punto.fecha === hoy ? " · día en curso" : ""}
       </p>
     </div>
   );
@@ -49,7 +49,7 @@ export function GraficoAsistencia({ datos, hoy }: { datos: PuntoAsistencia[]; ho
   const [rango, setRango] = useState<Rango>("30");
   const visibles = datos.slice(-Number(rango));
 
-  // El resumen ignora domingos y el día en curso (aún incompleto).
+  // El resumen ignora fines de semana y el día en curso (aún incompleto).
   const habiles = visibles.filter((p) => !p.domingo && p.fecha !== hoy);
   const promedio = habiles.length
     ? habiles.reduce((t, p) => t + p.usuarios, 0) / habiles.length
@@ -111,7 +111,7 @@ export function GraficoAsistencia({ datos, hoy }: { datos: PuntoAsistencia[]; ho
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className="size-2 rounded-[2px] bg-estado-desactivado" />
-          Domingo (no cuenta para racha)
+          Fin de semana (no cuenta para racha)
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className="size-2 rounded-[2px] bg-primary/50" />

@@ -2,21 +2,17 @@
 // de Supabase ni del entorno, para poder testearlas aisladas.
 //
 // REGLAS DE NEGOCIO (implementación):
-// - Días exigibles: lun-sáb (getDay 1..6). Domingo (0) no cuenta: el
-//   gimnasio no abre.
+// - Días exigibles: lun-vie (getDay 1..5). Sábado (6) y domingo (0) no
+//   cuentan: son neutros (no suman, no restan y NO reinician los fallos).
 // - Zona horaria: America/Bogota (UTC-5). Todas las fechas de entrada
 //   son "YYYY-MM-DD" en Bogotá o timestamps UTC convertidos a día Bogotá
 //   por el llamador (ver lib/racha/bogota.ts).
 // - Activación: el primer ejercicio de un día exigible no previamente
 //   activado incrementa currentCount en 1.
-// - Tolerancia 1 día: faltar 1 día exigible no rompe la racha (queda
-//   "congelada", sin incrementar).
-// - Reset a 0: 2 días exigibles fallados de forma CONSECUTIVA sin que un
-//   domingo medie entre ambos → currentCount = 0.
-// - Regla del domingo: el contador de fallados consecutivos se reinicia
-//   cada domingo (el domingo "interrumpe" la cadena de fallos). Si el
-//   usuario falla sábado y luego lunes (con domingo en medio), NO se
-//   consideran 2 fallos consecutivos. Regla confirmada por Adriel.
+// - Protección de 2 días: faltar hasta 2 días exigibles seguidos no rompe
+//   la racha (queda "congelada", sin incrementar).
+// - Reset a 0: 3 días exigibles fallados de forma CONSECUTIVA (el fin de
+//   semana en medio no interrumpe la cadena: jue+vie+lun fallados = 3).
 // - Fecha de corte: la racha solo considera ejercicios con
 //   fecha_completado >= FECHA_INICIO_RACHA (Bogotá). Los ejercicios
 //   anteriores se ignoran para la racha pero se conservan en
@@ -33,6 +29,10 @@ import {
 
 /** Domingo = 0 en getUTCDay. */
 export const DOMINGO = 0;
+/** Sábado = 6 en getUTCDay. */
+export const SABADO = 6;
+/** Días exigibles que se pueden fallar seguidos sin perder la racha. */
+export const DIAS_PROTECCION = 2;
 
 /**
  * Fecha de corte (Bogotá, "YYYY-MM-DD") desde cuando la racha empieza a
@@ -50,10 +50,11 @@ export const FECHA_INICIO_RACHA = "2026-08-23";
 const MAX_DIAS_BACK = 400;
 
 /**
- * true si el día (medianoche Bogotá) es exigible: lun-sáb.
+ * true si el día (medianoche Bogotá) es exigible: lun-vie.
  */
 export function esDiaExigible(fecha: Date): boolean {
-  return diaSemanaBogota(fecha) !== DOMINGO;
+  const dow = diaSemanaBogota(fecha);
+  return dow !== DOMINGO && dow !== SABADO;
 }
 
 /**
@@ -83,25 +84,13 @@ export function construirCalendarioActivaciones(
 }
 
 /**
- * REGLA DEL DOMINGO — función aislada para facilidad de ajuste.
- *
  * Determina si la racha debe resetearse a 0 dado el número actual de días
- * exigibles fallados de forma consecutiva (sin ejercicio) DENTRO de la
- * misma semana laboral (lun-sáb).
- *
- * Interpretación confirmada por Adriel:
- *   La racha SOLO se resetea si se acumulan 2 fallos exigibles consecutivos
- *   dentro de la MISMA semana laboral (lun-sáb) sin que un domingo se
- *   interponga. Si un domingo se interpone, el llamador (`calcularRacha`)
- *   ya reinició el contador de fallos a 0 al cruzar el domingo, por lo que
- *   los fallos posteriores pertenecen a una nueva semana y solo se resetea
- *   si acumulan 2 nuevamente.
- *
- *   Por ejemplo: fallar sábado y luego el lunes siguiente NO rompe la
- *   racha, porque el domingo queda entre ambos.
+ * exigibles (lun-vie) fallados de forma consecutiva. Se toleran
+ * `DIAS_PROTECCION` (2); el tercero seguido reinicia. El fin de semana es
+ * neutro: no reinicia el contador.
  */
 export function shouldResetStreak(consecutiveMissed: number): boolean {
-  return consecutiveMissed >= 2;
+  return consecutiveMissed > DIAS_PROTECCION;
 }
 
 /**
@@ -113,13 +102,11 @@ interface WalkState {
   lastActivatedDate: string | null;
   rota: boolean;
   /**
-   * Fallos exigibles contados en el mismo " bloque semanal" que HOY
-   * (desde el último domingo excluido hacia hoy excluido).
-   * Solo se cuentan mientras no hayamos cruzado un domingo desde hoy.
-   * Sirven para evaluar `enRiesgo` (1 fallo en la misma semana laboral que
-   * hoy + hoy todavía pendiente → si falla hoy rompe la racha).
+   * Fallos exigibles recientes: los vistos entre hoy y el último día
+   * activado (mientras `count === 0`). Sirven para `enRiesgo` (ya se usaron
+   * los 2 días de protección + hoy pendiente → si falla hoy se rompe).
    */
-  fallosBloqueHoy: number;
+  fallosRecientes: number;
 }
 
 /**
@@ -127,14 +114,12 @@ interface WalkState {
  * días activados y la fecha "hoy" de Bogotá.
  *
  * Camina desde hoy hacia atrás, día por día, en zona Bogotá:
- *   - domingo  → resetea consecutiveMissed a 0 (regla del domingo) y cierra
- *     el "bloque semanal de hoy" (a partir de aquí los fallos ya no cuentan
- *     para el riesgo de esta semana).
+ *   - sábado/domingo → neutros: se saltan sin tocar los contadores.
  *   - exigible activado  → count++, consecutiveMissed=0, registra último.
  *   - exigible no activado:
  *       * si es HOY y hoy no exigible-activado → todayPending (no fallo).
- *       * si es día pasado → consecutiveMissed++; si está en el bloque
- *         semanal de hoy → fallosBloqueHoy++; si shouldResetStreak()
+ *       * si es día pasado → consecutiveMissed++; si aún no hay días
+ *         activados → fallosRecientes++; si shouldResetStreak()
  *         → se rompe la racha y se corta el cálculo.
  *
  * @param activados    set de "YYYY-MM-DD" Bogotá con ejercicio.
@@ -152,23 +137,18 @@ export function calcularRacha(
     consecutiveMissed: 0,
     lastActivatedDate: null,
     rota: false,
-    fallosBloqueHoy: 0,
+    fallosRecientes: 0,
   };
 
   let todayPending = false;
-  let enTramoSemanaDeHoy = true; // mientras no crucemos un domingo desde hoy
 
   let cursor = hoy;
   for (let i = 0; i < MAX_DIAS_BACK; i++) {
-    const dow = diaSemanaBogota(cursor);
     const dateStr = fechaAString(cursor);
     const esHoy = dateStr === hoyStr;
 
-    if (dow === DOMINGO) {
-      // Regla del domingo: el contador de fallos consecutivos se reinicia,
-      // y a partir de aquí ya no estamos en el bloque semanal de hoy.
-      state.consecutiveMissed = 0;
-      enTramoSemanaDeHoy = false;
+    if (!esDiaExigible(cursor)) {
+      // Fin de semana: neutro, no toca ningún contador.
       cursor = sumarDias(cursor, -1);
       continue;
     }
@@ -185,8 +165,8 @@ export function calcularRacha(
       todayPending = true;
     } else {
       state.consecutiveMissed += 1;
-      if (enTramoSemanaDeHoy) {
-        state.fallosBloqueHoy += 1;
+      if (state.count === 0) {
+        state.fallosRecientes += 1;
       }
       if (shouldResetStreak(state.consecutiveMissed)) {
         // La racha se rompe ANTES de este día fallado. Lo acumulado en
@@ -212,22 +192,22 @@ function buildEstado(
   todayPending: boolean
 ): EstadoRacha {
   const hoyActivado = state.lastActivatedDate === hoyStr;
-  const esDomingoHoy = diaSemanaBogota(stringAFecha(hoyStr)) === DOMINGO;
+  const esDescansoHoy = !esDiaExigible(stringAFecha(hoyStr));
 
-  // "En riesgo": HOY es exigible y todavía no se registró ejercicio, hay al
-  // menos 1 día exigible fallado en el MISMO bloque semanal que hoy (sin
-  // que un domingo se interponga), y existe una racha viva (count > 0).
-  // Si el usuario faltara hoy, los 2 fallos estarían en la misma semana
-  // laboral → reset a 0.
+  // "En riesgo": HOY es exigible y todavía no se registró ejercicio, ya se
+  // gastaron los 2 días de protección (fallos recientes) y existe una racha
+  // viva (count > 0). Si falla hoy sería el 3º seguido → reset a 0.
   const enRiesgo =
-    todayPending && state.fallosBloqueHoy >= 1 && state.count > 0;
+    todayPending &&
+    state.fallosRecientes >= DIAS_PROTECCION &&
+    state.count > 0;
 
   return {
     currentCount: state.count,
     lastActivatedDate: state.lastActivatedDate,
     diasFalladosConsecutivos: state.consecutiveMissed,
     hoyActivado,
-    esDomingo: esDomingoHoy,
+    esDomingo: esDescansoHoy,
     enRiesgo,
     rota: state.rota,
   };
@@ -238,7 +218,7 @@ function buildEstado(
  * días activados (en Bogotá). Útil para la sección /racha.
  *
  * Recorre las fechas activadas ordenadas asc, contando con la misma regla
- * de tolerancia (1 fallo tolerado, 2 rompen) y devolviendo el máximo
+ * de tolerancia (2 fallos tolerados, 3 rompen) y devolviendo el máximo
  * `currentCount` alcanzado en cualquier momento.
  */
 export function calcularMejorRacha(activados: Set<string>): number {
@@ -256,10 +236,9 @@ export function calcularMejorRacha(activados: Set<string>): number {
   let guardias = 0;
   while (cursor.getTime() <= limite.getTime() && guardias < MAX_DIAS_BACK * 2) {
     guardias++;
-    const dow = diaSemanaBogota(cursor);
     const dateStr = fechaAString(cursor);
-    if (dow === DOMINGO) {
-      consecutiveMissed = 0;
+    if (!esDiaExigible(cursor)) {
+      // Fin de semana neutro.
     } else if (activados.has(dateStr)) {
       count += 1;
       consecutiveMissed = 0;
@@ -277,7 +256,7 @@ export function calcularMejorRacha(activados: Set<string>): number {
 }
 
 /**
- * Lista de días exigibles (lun-sáb) entre dos fechas Bogotá inclusive.
+ * Lista de días exigibles (lun-vie) entre dos fechas Bogotá inclusive.
  */
 export function diasExigiblesEntre(inicio: Date, fin: Date): Date[] {
   const out: Date[] = [];

@@ -68,7 +68,7 @@ describe("construirPanel", () => {
   it("entrenaron hoy solo cuenta cuentas activas", () => {
     expect(panel.kpis.entrenaronHoy).toBe(1);
     expect(panel.actividadHoy).toEqual([
-      { usuarioId: "ana", nombre: "ANA", ejercicios: 2, hora: "08:00", racha: 2 },
+      { usuarioId: "ana", nombre: "ANA", ejercicios: 2, hora: "08:00", racha: 1 },
     ]);
   });
 
@@ -85,7 +85,7 @@ describe("construirPanel", () => {
 
   it("serie diaria de 90 días terminando hoy", () => {
     expect(panel.asistenciaDiaria).toHaveLength(90);
-    expect(panel.asistenciaDiaria.at(-1)).toEqual({ fecha: HOY, usuarios: 2, domingo: false });
+    expect(panel.asistenciaDiaria.at(-1)).toEqual({ fecha: HOY, usuarios: 2, domingo: true });
     expect(panel.asistenciaDiaria.at(-2)?.usuarios).toBe(1);
     expect(panel.kpis.sparkline).toHaveLength(14);
   });
@@ -97,7 +97,7 @@ describe("construirPanel", () => {
   });
 
   it("top rachas, cumpleaños y últimos registros", () => {
-    expect(panel.topRachas[0]).toMatchObject({ usuarioId: "ana", racha: 2, hoyActivado: true });
+    expect(panel.topRachas[0]).toMatchObject({ usuarioId: "ana", racha: 1, hoyActivado: false });
     expect(panel.cumpleanos[0]).toMatchObject({ usuarioId: "ana", diasRestantes: 0, cumple: 36 });
     expect(panel.ultimosRegistros[0].usuarioId).toBe("eva");
   });

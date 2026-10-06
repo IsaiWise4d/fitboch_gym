@@ -59,8 +59,8 @@ describe("construirFilasUsuarios", () => {
       estado: "activa",
       plan: "Trimestral",
       racha: 1,
-      // Faltó el jueves y hoy (sábado) aún no entrena → misma semana laboral.
-      estadoRacha: "en_riesgo",
+      // Faltó el jueves (1 de 2 días de protección) y hoy es sábado (descanso).
+      estadoRacha: "activa",
       ultimoEntreno: "2026-10-02",
       dias30: 1,
     });

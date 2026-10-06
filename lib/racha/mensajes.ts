@@ -5,7 +5,7 @@ import type { EstadoRacha } from "./types";
 
 /** Frase corta que acompaña al contador de racha. */
 export function mensajeRacha(estado: EstadoRacha): string {
-  if (estado.esDomingo) return "Hoy es descanso; tu racha descansa";
+  if (estado.esDomingo) return "Hoy es descanso (fin de semana); tu racha descansa";
   if (estado.currentCount === 0) return "Registra hoy para empezar tu racha";
   if (estado.hoyActivado) return "¡Racha activa hoy! Vuelve mañana";
   return "Entrena hoy para sumar un día más";
